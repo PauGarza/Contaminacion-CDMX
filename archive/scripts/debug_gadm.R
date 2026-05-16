@@ -1,0 +1,6 @@
+library(terra)
+m <- vect('data/gadm_mexico/gadm41_MEX_2.shp')
+cat("Estados unicos (muestra):\n")
+print(sort(unique(m$NAME_1))[1:20])
+cat("\nBusqueda CDMX/DF:\n")
+print(grep('Distrito|Ciudad|Capital|Federal', unique(m$NAME_1), value=TRUE, ignore.case=TRUE))
