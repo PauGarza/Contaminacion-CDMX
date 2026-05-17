@@ -1,0 +1,16 @@
+model {
+  for (i in 1:n) {
+    pm25[i] ~ dgamma(a, a/mu[i])
+    log(mu[i]) <- alpha + beta[1]*tempc[i] + beta[2]*hrc[i]
+                        + beta[3]*sen_t[i]  + beta[4]*cos_t[i]
+    yf1[i] ~ dgamma(a, a/mu[i])
+  }
+
+  alpha ~ dnorm(0, 0.001)
+  for (k in 1:4) {
+    beta[k] ~ dnorm(0, 0.001)
+  }
+  a ~ dgamma(0.001, 0.001)
+
+  sigma.C2 <- 1/sqrt(a)
+}

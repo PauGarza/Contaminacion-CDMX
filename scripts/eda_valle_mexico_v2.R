@@ -74,13 +74,15 @@ cat("\nGuardado: output/figures/eda_valle_v2_series.png\n")
 est_ord <- resumen$estacion[order(resumen$pm25_mean)]
 df$estacion <- factor(df$estacion, levels=est_ord)
 
-png("output/figures/eda_valle_v2_boxplot_estacion.png", width=1400, height=700)
-boxplot(pm25 ~ estacion, data=df, horizontal=TRUE, las=1, cex.axis=0.7,
+png("output/figures/eda_valle_v2_boxplot_estacion.png", width=1600, height=900)
+par(mar=c(5, 12, 4, 2))
+boxplot(pm25 ~ estacion, data=df, horizontal=TRUE, las=1, cex.axis=0.95,
         main="PM2.5 por estacion (ordenadas por media)", col="grey80",
-        xlab="PM2.5 (µg/m³)")
+        xlab="PM2.5 (µg/m³)", cex.lab=1.3, cex.main=1.4)
 abline(v=mean(df$pm25), col="firebrick2", lwd=2, lty=2)
 legend("bottomright", legend=paste("Global:", round(mean(df$pm25),1)), 
-       col="firebrick2", lwd=2, lty=2, bg="white")
+       col="firebrick2", lwd=2, lty=2, bg="white", cex=1.1)
+par(mar=c(5, 4, 4, 2))
 dev.off()
 cat("Guardado: output/figures/eda_valle_v2_boxplot_estacion.png\n")
 
@@ -113,16 +115,49 @@ dev.off()
 cat("Guardado: output/figures/eda_valle_v2_correlacion.png\n")
 
 # Scatter con lowess
-png("output/figures/eda_valle_v2_scatter.png", width=1200, height=400)
-par(mfrow=c(1,3))
-plot(df$temp, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="Temp (°C)", ylab="PM2.5")
+png("output/figures/eda_valle_v2_scatter.png", width=1400, height=500)
+par(mfrow=c(1,3), mar=c(5, 5, 4, 2))
+plot(df$temp, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="Temperatura (°C)", ylab="PM2.5 (µg/m³)",
+     main="PM2.5 vs Temperatura", cex.lab=1.3, cex.axis=1.1, cex.main=1.3)
 lines(lowess(df$temp, df$pm25), col="firebrick2", lwd=2)
-plot(df$hr, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="HR (%)", ylab="PM2.5")
+plot(df$hr, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="Humedad relativa (%)", ylab="PM2.5 (µg/m³)",
+     main="PM2.5 vs Humedad", cex.lab=1.3, cex.axis=1.1, cex.main=1.3)
 lines(lowess(df$hr, df$pm25), col="firebrick2", lwd=2)
-plot(df$dia_año, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="Dia del año", ylab="PM2.5")
+plot(df$dia_año, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="Día del año", ylab="PM2.5 (µg/m³)",
+     main="PM2.5 vs Tiempo", cex.lab=1.3, cex.axis=1.1, cex.main=1.3)
 lines(lowess(df$dia_año, df$pm25), col="firebrick2", lwd=2)
 dev.off()
 cat("Guardado: output/figures/eda_valle_v2_scatter.png\n")
+
+# Scatter log(PM2.5) vs covariables — motiva la transformacion log del modelo
+png("output/figures/eda_valle_v2_scatter_log.png", width=1400, height=500)
+par(mfrow=c(1,3), mar=c(5,5,4,2))
+plot(df$temp, log(df$pm25), pch=20, col=rgb(0,0,0,0.2),
+     xlab="Temperatura (°C)", ylab="log(PM2.5)", main="log(PM2.5) vs Temperatura")
+lines(lowess(df$temp, log(df$pm25)), col="firebrick2", lwd=2)
+plot(df$hr, log(df$pm25), pch=20, col=rgb(0,0,0,0.2),
+     xlab="Humedad relativa (%)", ylab="log(PM2.5)", main="log(PM2.5) vs Humedad")
+lines(lowess(df$hr, log(df$pm25)), col="firebrick2", lwd=2)
+plot(df$dia_año, log(df$pm25), pch=20, col=rgb(0,0,0,0.2),
+     xlab="Día del año", ylab="log(PM2.5)", main="log(PM2.5) vs Tiempo")
+lines(lowess(df$dia_año, log(df$pm25)), col="firebrick2", lwd=2)
+dev.off()
+cat("Guardado: output/figures/eda_valle_v2_scatter_log.png\n")
+
+# Scatter coloreado por ciudad — heterogeneidad espacial antes del modelo
+col.ciudad <- c(cdmx="steelblue", edomex="firebrick2", hidalgo="darkgreen")
+col.vec <- col.ciudad[df$ciudad]
+png("output/figures/eda_valle_v2_scatter_ciudad.png", width=1400, height=500)
+par(mfrow=c(1,3), mar=c(5,5,4,2))
+plot(df$temp, df$pm25, pch=20, col=col.vec,
+     xlab="Temperatura (°C)", ylab="PM2.5 (µg/m³)", main="PM2.5 vs Temperatura por ciudad")
+legend("topright", legend=names(col.ciudad), col=col.ciudad, pch=20, bty="n")
+plot(df$hr, df$pm25, pch=20, col=col.vec,
+     xlab="Humedad (%)", ylab="PM2.5 (µg/m³)", main="PM2.5 vs Humedad por ciudad")
+plot(df$dia_año, df$pm25, pch=20, col=col.vec,
+     xlab="Día del año", ylab="PM2.5 (µg/m³)", main="PM2.5 vs Tiempo por ciudad")
+dev.off()
+cat("Guardado: output/figures/eda_valle_v2_scatter_ciudad.png\n")
 
 # Guardar resumen
 write.csv(resumen, "output/figures/eda_valle_v2_resumen.csv", row.names=FALSE)

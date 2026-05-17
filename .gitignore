@@ -8,7 +8,7 @@ archive/
 # Datos crudos descargados (regenerables via scripts)
 data/raw/*.csv
 
-# Archivos de modelo grandes (regenerables)
+# Archivos de modelo grandes (regenerables via scripts)
 output/*.RData
 output/figures/*.RData
 
@@ -22,7 +22,17 @@ data/*.zip
 # R temporales
 .Rhistory
 .RData
+.RDataTmp
 .Rproj.user/
+
+# LaTeX auxiliares
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
 
 # Windows
 Thumbs.db
@@ -30,6 +40,10 @@ Desktop.ini
 
 # Jupyter checkpoints (si aplica)
 .ipynb_checkpoints/
+
+# Claude Code — archivos de instrucciones y configuracion local
+.claude/
+CLAUDE.md
 
 # Kimi temporales
 *.tmp
