@@ -1,0 +1,35 @@
+# ============================================
+# Gitignore — Contaminacion-CDMX
+# ============================================
+
+# Directorio de archivos obsoletos
+archive/
+
+# Datos crudos descargados (regenerables via scripts)
+data/raw/*.csv
+
+# Archivos de modelo grandes (regenerables)
+output/*.RData
+output/figures/*.RData
+
+# Figuras (regenerables via scripts)
+output/figures/*.png
+
+# Shapefiles grandes
+data/gadm_mexico/
+data/*.zip
+
+# R temporales
+.Rhistory
+.RData
+.Rproj.user/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Jupyter checkpoints (si aplica)
+.ipynb_checkpoints/
+
+# Kimi temporales
+*.tmp

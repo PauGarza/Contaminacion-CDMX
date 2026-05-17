@@ -1,32 +1,103 @@
 # Proyecto Final — Regresión Avanzada
-## Análisis Bayesiano de la Calidad del Aire en Ciudades Mexicanas
+## Análisis Bayesiano Espacial de PM2.5 en el Valle de México
 
-**Equipo:** 2 integrantes  
 **Fuente de datos:** SINAICA — Instituto Nacional de Ecología y Cambio Climático  
-**URL descarga:** https://sinaica.inecc.gob.mx/data.php?tipo=V  
-**Software:** R + JAGS (R2jags)
+**URL:** https://sinaica.inecc.gob.mx/data.php?tipo=V  
+**Software:** R 4.5.2 + JAGS 4.3.1 (R2jags), terra, dplyr  
+**Shapefile:** GADM nivel 2 (municipios/alcaldías)
 
 ---
 
 ## Pregunta central
 
-¿Cómo varía la concentración de PM2.5 a lo largo del año en las tres zonas metropolitanas más grandes de México, difiere esa dinámica entre ciudades y entre estaciones de monitoreo dentro de cada ciudad, y qué tan importante es la estructura espacial en la predicción de la contaminación?
+> **¿Qué tan importante es la estructura espacial para explicar la variación de PM2.5 en el Valle de México, y podemos usarla para predecir la contaminación en zonas sin sensores?**
+
+Más específicamente:
+1. ¿Qué factores (clima, estacionalidad) explican la variación temporal de PM2.5?
+2. ¿Existen diferencias sistemáticas entre alcaldías/municipios que no se explican por clima?
+3. ¿Es mejor modelar estas diferencias como efectos fijos o como realizaciones de un proceso aleatorio jerárquico?
+4. ¿Podemos interpolar espacialmente para predecir en los 76 territorios del Valle de México?
 
 ---
 
-## Ciudades y estaciones
+## Área de estudio: Valle de México
 
-| Ciudad | Red en SINAICA | Estaciones sugeridas |
-|--------|---------------|----------------------|
-| CDMX | Valle de México | Pedregal, Merced, Tlalnepantla, Benito Juárez (4) |
-| Guadalajara | Guadalajara | Centro, Las Águilas, Miravalle (3) |
-| Monterrey | Nuevo León | Obispado, San Nicolás, Apodaca, San Pedro (4) |
+El Valle de México es una cuenca hidrológica cerrada que alberga la Zona Metropolitana del Valle de México (ZMVM), la mayor aglomeración urbana de México (~22 millones de habitantes).
 
-**Total:** 11 estaciones, año 2023 completo.
+### Territorios incluidos
 
-**Nota:** Loma Dorada (Guadalajara) fue descartada porque no reportó temperatura ni humedad relativa en 2023.
+| Entidad | Territorios | Con estaciones SINAICA |
+|---|---|---|
+| **CDMX** | 16 alcaldías | 16 (38 estaciones) |
+| **Edomex** | 59 municipios | 15 (17 estaciones) |
+| **Hidalgo** | Tizayuca | 1 (1 estación) |
+| **Total** | **76 territorios** | **32 territorios con datos (56 estaciones)** |
 
-**Razón de la reducción:** El Modelo E (espacial) requiere coordenadas geográficas y una matriz de distancias manejable. Con ~12 estaciones la matriz es 12×12 y el MCMC converge en tiempos razonables. Más estaciones no mejoran sustancialmente la inferencia pero sí elevan el costo computacional.
+**Nota:** 44 municipios de Edomex no tienen estaciones de monitoreo de calidad del aire.
+
+### Estaciones de monitoreo SINAICA (2023)
+
+**Dataset final v2 (14 estaciones con datos completos PM2.5 + temp + HR):**
+
+| # | Estación | Alcaldía/Municipio | PM2.5 (µg/m³) | n | Entidad |
+|---|----------|-------------------|---------------|---|---|
+| 1 | Santiago Acahualtepec | Iztapalapa | 23.5 | 189 | CDMX |
+| 2 | Hospital General de México | Cuauhtémoc | 22.7 | 52 | CDMX |
+| 3 | Gustavo A. Madero | Gustavo A. Madero | 22.7 | 154 | CDMX |
+| 4 | Tlalnepantla | Tlalnepantla de Baz | 21.8 | 174 | Edomex |
+| 5 | San Agustín | Ecatepec de Morelos | 20.7 | 84 | Edomex |
+| 6 | UAM Iztapalapa | Iztapalapa | 20.6 | 207 | CDMX |
+| 7 | Merced | Venustiano Carranza | 20.6 | 235 | CDMX |
+| 8 | UAM Xochimilco | Coyoacán | 20.5 | 233 | CDMX |
+| 9 | Nezahualcóyotl | Nezahualcóyotl | 20.4 | 218 | Edomex |
+| 10 | Benito Juárez | Benito Juárez | 19.8 | 236 | CDMX |
+| 11 | FES Aragón | Nezahualcóyotl | 18.0 | 233 | Edomex |
+| 12 | Pedregal | Álvaro Obregón | 16.2 | 181 | CDMX |
+| 13 | Ajusco Medio | Tlalpan | 16.0 | 188 | CDMX |
+| 14 | Biblioteca | Tizayuca | 15.4 | 233 | Hidalgo |
+
+**Total v2:** 14 estaciones, 2,617 observaciones diarias (ene–dic 2023, mayoría ene–sep)
+
+**Estaciones descartadas de las 56 buscadas (sin datos PM2.5 + temp + HR en 2023):**
+
+| Estación | ID | Motivo de exclusión |
+|----------|-----|---------------------|
+| Azcapotzalco | 315 | Sin datos 2023 |
+| Cuitláhuac | 318 | Sin datos 2023 |
+| Coyoacán | 247 | Sin datos 2023 |
+| Santa Ursula | 400 | Sin datos 2023 |
+| Taxqueña | 335 | Sin datos 2023 |
+| Santa Fe | 262 | Sin datos 2023 |
+| Lagunilla | 324 | Sin datos 2023 |
+| Metro Insurgentes | 399 | Sin datos 2023 |
+| Museo de la Ciudad de México | 326 | Sin datos 2023 |
+| Aragón | 314 | Sin datos 2023 |
+| Instituto Mexicano del Petróleo | 322 | Sin datos 2023 |
+| La Villa | 325 | Sin datos 2023 |
+| San Juan de Aragón | 261 | Sin datos 2023 |
+| Vallejo | 401 | Sin datos 2023 |
+| Iztacalco | 252 | Sin datos 2023 |
+| Cerro de la estrella | 317 | Sin datos 2023 |
+| Lomas | 255 | Sin datos 2023 |
+| Secretaría de Hacienda | 264 | Sin datos 2023 |
+| Tacuba | 334 | Sin datos 2023 |
+| Milpa Alta | 299 | Sin datos 2023 |
+| Ajusco | 241 | Sin datos 2023 |
+| Tlalpan | 336 | Sin datos 2023 |
+| Tláhuac | 265 | Solo temp/HR, sin PM2.5 |
+| Hangares | 320 | Sin datos 2023 |
+| Plateros | 332 | Sin datos 2023 |
+| Acolman | 240 | Sin datos 2023 |
+| Atizapán | 243 | Sin datos 2023 |
+| Chalco | 246 | Solo temp/HR, sin PM2.5 |
+| Villa de las Flores | 270 | Solo temp/HR, sin PM2.5 |
+| Cuautitlán | 249 | Solo temp/HR, sin PM2.5 |
+| Camarones | — | Solo PM2.5, sin temp/HR |
+| Centro de Ciencias de la Atmósfera | — | Solo PM2.5, sin temp/HR |
+| Cuajimalpa | 248 | Solo temp/HR, sin PM2.5 |
+| Miguel Hidalgo | 263 | 1 registro de PM2.5 (insuficiente) |
+
+> **Nota:** De 56 estaciones localizadas espacialmente dentro del Valle de México, solo 14 (25%) reportaron PM2.5, temperatura y humedad relativa de forma simultánea durante 2023. Esto refleja la grave limitación de cobertura del sistema SINAICA.
 
 ---
 
@@ -35,257 +106,361 @@
 | Variable | Descripción | Rol | Escala |
 |----------|-------------|-----|--------|
 | `pm25` | Concentración diaria promedio de PM2.5 (µg/m³) | **Y — variable respuesta** | Razón |
-| `ciudad` | CDMX / Guadalajara / Monterrey | Agrupador jerárquico | Nominal |
-| `estacion` | Nombre de la estación | Agrupador jerárquico anidado | Nominal |
-| `lat`, `lon` | Coordenadas geográficas de la estación | Predictor espacial | Intervalo |
+| `estacion` | Nombre de la estación de monitoreo | Agrupador | Nominal |
+| `municipio` | Alcaldía de CDMX o municipio de Edomex/Hidalgo | Agrupador espacial | Nominal |
+| `ciudad` | cdmx / edomex / hidalgo | Agrupador estado | Nominal |
+| `lat`, `lon` | Coordenadas geográficas | Predictor espacial | Intervalo |
 | `dia_año` | Día del año (1–365) | Índice temporal | Intervalo |
-| `mes` | Mes (1–12) | Estacionalidad (agrupador) | Ordinal |
 | `temp` | Temperatura diaria promedio (°C) | Covariable meteorológica | Intervalo |
 | `hr` | Humedad relativa diaria promedio (%) | Covariable meteorológica | Intervalo |
-| `dia_semana` | Lunes–Domingo (dummy) | Efecto laboral vs. fin de semana | Nominal |
-| `sen_t`, `cos_t` | sin(2π·día/365), cos(2π·día/365) | Estacionalidad invernal/veraniega | Intervalo |
-
-**Nota:** Se omite velocidad del viento (`vv`) para reducir la carga de descarga. Temperatura y humedad relativa capturan gran parte de la variabilidad meteorológica relevante para PM2.5.
+| `sen_t`, `cos_t` | sin(2π·día/365), cos(2π·día/365) | Fourier estacional | Intervalo |
 
 ---
 
-## Cinco objetivos / cinco modelos
+## Notación matemática
 
-### Objetivo 1 — Modelo base Normal global (Modelo A)
-**Pregunta:** ¿Existe una relación entre temperatura, humedad y estacionalidad con la concentración de PM2.5, ignorando ciudad y estructura espacial?
+| Símbolo | Significado | Tipo |
+|---------|-------------|------|
+| $i$ | Índice de observación diaria ($i = 1, \dots, n$) | Índice |
+| $n$ | Total de observaciones (días con datos válidos) | Escalar |
+| $j$ | Índice de estación de monitoreo ($j = 1, \dots, J$) | Índice |
+| $J$ | Total de estaciones en el modelo | Escalar |
+| $\text{PM2.5}_i$ | Concentración diaria de material particulado fino (µg/m³) | Variable respuesta |
+| $\mu_i$ | Media de la distribución para la observación $i$ | Parámetro latente |
+| $\alpha$ | Intercepto global (media log-PM2.5 cuando todas las X = 0) | Parámetro |
+| $\alpha_j$ | Efecto de la estación $j$ (desvío respecto al intercepto global) | Parámetro |
+| $\alpha_{\text{adj}}$ | Intercepto ajustado por restricción suma-cero | Parámetro derivado |
+| $\alpha_{j,\text{adj}}$ | Efecto estación ajustado por restricción suma-cero | Parámetro derivado |
+| $\beta_1, \beta_2, \beta_3, \beta_4$ | Coeficientes de temp, HR, sen_t, cos_t | Parámetros |
+| $\tau$ | Precisión del error residual ($\tau = 1/\sigma^2$) | Parámetro |
+| $\sigma$ | Desviación estándar del error residual | Parámetro derivado |
+| $\tau_\alpha$ | Precisión de la distribución hiperprior de efectos estación | Hiperparámetro |
+| $\sigma_\alpha$ | Desviación estándar entre estaciones ($1/\sqrt{\tau_\alpha}$) | Hiperparámetro derivado |
+| $\text{temp}_i$ | Temperatura diaria promedio (°C), estandarizada | Covariable |
+| $\text{hr}_i$ | Humedad relativa diaria promedio (%), estandarizada | Covariable |
+| $\text{sen\_t}_i$ | $\sin(2\pi \cdot \text{día}_i / 365)$ | Covariable estacional |
+| $\text{cos\_t}_i$ | $\cos(2\pi \cdot \text{día}_i / 365)$ | Covariable estacional |
+| $w(s_i)$ | Efecto espacial (Proceso Gaussiano) en la ubicación $s_i$ | Proceso aleatorio |
+| $\Sigma$ | Matriz de covarianza espacial $J \times J$ | Matriz |
+| $\rho$ | Rango espacial: distancia donde correlación cae a $e^{-1} \approx 0.37$ | Hiperparámetro |
+| $d_{ij}$ | Distancia geográfica entre estaciones $i$ y $j$ (grados) | Distancia |
+| $\sigma_{\text{spatial}}$ | Magnitud de la variación espacial | Hiperparámetro |
+
+---
+
+## Cinco modelos: qué pregunta responde cada uno
+
+### Modelo A — Normal global (sin agrupamiento)
+> **Pregunta:** ¿Cuánto de la variación temporal de PM2.5 se explica por clima y estacionalidad, **ignorando por completo** dónde se tomó la medición?
 
 ```
 log(PM2.5_i) ~ N(μ_i, τ)
 μ_i = α + β₁·temp_i + β₂·hr_i + β₃·sen_t_i + β₄·cos_t_i
 ```
 
-- Priors poco informativas: `α, β ~ dnorm(0, 0.001)`, `τ ~ dgamma(0.001, 0.001)`
-- MCMC: 10 000 iteraciones, 1 000 burn-in, 2 cadenas (Gibbs, sin thinning)
-- Diagnóstico: traza, media ergódica, histograma, ACF para α y cada β
-- Métricas: DIC, pseudo-R² = cor(log(Y), Ŷ)²
+**Variables en este modelo:**
+| Variable | Rol | Interpretación |
+|----------|-----|----------------|
+| $\text{PM2.5}_i$ | Respuesta | Concentración diaria en la observación $i$ |
+| $\mu_i$ | Media | Valor esperado de log-PM2.5 para la observación $i$ |
+| $\alpha$ | Intercepto | log-PM2.5 promedio global cuando temp=HR=0 y estacionalidad=nula |
+| $\beta_1$ | Pendiente | Cambio en log-PM2.5 por cada 1-SD de temperatura |
+| $\beta_2$ | Pendiente | Cambio en log-PM2.5 por cada 1-SD de humedad relativa |
+| $\beta_3, \beta_4$ | Pendientes | Amplitud y fase del patrón estacional anual |
+| $\tau$ | Precisión | Inverso de la varianza residual del modelo global |
+
+- **Uso:** Línea base. Si la estructura espacial no importa, este modelo debería ser competitivo.
+- **Resultado:** DIC = 1613.0, pseudo-R² = 0.292
+- **Hallazgo:** temp y Fourier son significativos, HR no lo es en modelo global.
 
 ---
 
-### Objetivo 2 — Modelo con efectos fijos por ciudad (Modelo B)
-**Pregunta:** ¿Varía el nivel promedio de PM2.5 y la sensibilidad a las covariables entre CDMX, Guadalajara y Monterrey?
+### Modelo B — Normal con efectos fijos por estación
+> **Pregunta:** ¿Existen diferencias sistemáticas entre estaciones que no se explican por clima, y cuánto mejoran la predicción si las tratamos como efectos fijos independientes?
 
 ```
 log(PM2.5_i) ~ N(μ_i, τ)
-μ_i = α + Σⱼ αⱼ·Z_ciudad[i,j] + (β₁ + Σⱼ β₁ⱼ·Z_ciudad[i,j])·temp_i + ...
+μ_i = α.adj + αⱼ.adj[estación[i]] + β₁·temp_i + β₂·hr_i + β₃·sen_t_i + β₄·cos_t_i
 ```
 
-- `Z[i,]` = matriz indicadora de ciudad (3 niveles)
-- Restricción de identificabilidad vía **ajuste suma-cero** dentro de JAGS:
-  ```
-  alpha.adj  <- alpha + mean(alphaj[])
-  alphaj.adj[j] <- alphaj[j] - mean(alphaj[])
-  ```
-- MCMC: 10 000 iter, 1 000 burn-in, 2 cadenas
-- Comparación con Modelo A mediante DIC (misma familia)
+**Variables en este modelo:**
+| Variable | Rol | Interpretación |
+|----------|-----|----------------|
+| $\text{PM2.5}_i$ | Respuesta | Concentración diaria en la observación $i$ |
+| $\alpha_{\text{adj}}$ | Intercepto ajustado | Media global de log-PM2.5 tras centrar efectos estación |
+| $\alpha_{j,\text{adj}}$ | Efecto fijo | Desvío del intercepto para la estación $j$ (suma cero) |
+| $\beta_1, \beta_2, \beta_3, \beta_4$ | Pendientes | Mismo significado que en A, pero ahora controlando por estación |
+| $\tau$ | Precisión | Varianza residual *dentro* de cada estación |
 
-> **Analogía con el parcial:** idéntica lógica a los efectos por ramo en el modelo (e). Se monitorean `alpha.adj`, `alphaj.adj`, `beta.adj`, `betaj.adj`.
+- Restricción suma-cero: $\sum_j \alpha_{j,\text{adj}} = 0$, por lo que $\alpha_{j,\text{adj}} > 0$ significa "más contaminada que el promedio" y $< 0$ "menos contaminada".
+- 10 efectos estación estimados libremente.
+
+- **Uso:** Captura toda la heterogeneidad estación-específica. Es el "techo" de lo que podemos explicar con covariables observadas.
+- **Resultado:** DIC = 1462.7, pseudo-R² = 0.349
+- **Hallazgo:** HR se vuelve significativa al controlar por estación (había correlaciones locales ocultas). Santiago Acahualtepec (+0.25 log) y FES Aragón (−0.19 log) son los extremos.
 
 ---
 
-### Objetivo 3 — Modelo jerárquico Normal por estación (Modelo C1)
-**Pregunta:** ¿Difiere la contaminación entre estaciones dentro de cada ciudad, más allá de las covariables meteorológicas?
-
-```
-log(PM2.5_ik) ~ N(μ_ik, τ)
-μ_ik = α + αⱼ[ciudad] + αₖ[estación] + β₁·temp_ik + β₂·hr_ik + β₃·sen_t_ik + β₄·cos_t_ik
-αₖ | φ ~ N(φⱼ, σ²_est)
-φⱼ ~ N(μ₀, σ²_ciudad)
-```
-
-- Modelo jerárquico de dos niveles: ciudad → estación
-- Intercambiabilidad (Tema 5/6): las estaciones dentro de una ciudad son simétricas a priori
-- Priors: `σ_est ~ dunif(0,10)`, `σ_ciudad ~ dunif(0,10)`, `μ₀ ~ dnorm(0, 0.001)`
-- MCMC: 50 000 iter, 5 000 burn-in, thin=5 o 10 (por efectos aleatorios)
-
----
-
-### Objetivo 4 — Modelo jerárquico Gamma por estación (Modelo C2)
-**Pregunta:** ¿Mejora el ajuste si modelamos PM2.5 en escala original con una distribución Gamma en lugar de Normal sobre log(PM2.5)?
-
-```
-PM2.5_ik ~ Gamma(a, a/μ_ik)
-log(μ_ik) = α + αⱼ[ciudad] + αₖ[estación] + β₁·tempc_ik + β₂·hrc_ik + β₃·sen_t_ik + β₄·cos_t_ik
-```
-
-- Covariables **centrales y estandarizadas**: `tempc = (temp - mean)/sd`, `hrc = (hr - mean)/sd`
-  - **Razón:** evita `exp(β·x)` que desborda si `x` está en escala original (mismo problema que en el parcial, inciso c)
-- Prior de β más ajustado: `dnorm(0, 0.01)` en lugar de `0.001`
-- Valores iniciales: `alpha = log(mean(y))`, `beta = 0`, `a = 1`
-- MCMC: 50 000 iter, 5 000 burn-in, **thin = 10** (Metropolis-Hastings genera alta autocorrelación)
-- **DIC no comparable con C1** (familias distintas). Comparación vía **pseudo-R²** en escala original
-
-> **Analogía con el parcial:** misma lógica de incisos c vs e/g. Estandarización obligatoria, inits cuidadosos, thinning alto.
-
----
-
-### Objetivo 5 — Modelo espacial con Proceso Gaussiano (Modelo E)
-**Pregunta:** ¿Existe dependencia espacial no capturada por el agrupamiento ciudad-estación, y mejora la predicción incorporarla?
+### Modelo C1 — Jerárquico Normal (estación ~ N(0, σ²_α))
+> **Pregunta:** ¿Podemos modelar las diferencias entre estaciones como realizaciones de un proceso aleatorio común en lugar de parámetros fijos, y cuánto "shrinkage" produce?
 
 ```
 log(PM2.5_i) ~ N(μ_i, τ)
-μ_i = α + β₁·temp_i + β₂·hr_i + β₃·sen_t_i + β₄·cos_t_i + f(s_i)
-f(s) ~ GP(0, Σ)    donde    Σ_ij = σ²_spatial · exp(-d_ij / ρ)
+μ_i = α + αⱼ[estación[i]] + β₁·temp_i + β₂·hr_i + β₃·sen_t_i + β₄·cos_t_i
+αⱼ ~ N(0, τ_α)
 ```
 
-- `s_i` = coordenadas (lat, lon) de la estación de la observación `i`
-- `d_ij` = distancia geodésica (km) entre estaciones `i` y `j`
-- **Matriz de covarianzas espacial** definida a través de un exponente cuadrático (kernel exponencial)
-- En JAGS se implementa como una **Normal multivariada** sobre un vector de efectos por estación, con matriz de covarianzas construida a partir de las distancias
-- Priors: `σ_spatial ~ dunif(0, 10)`, `ρ ~ dunif(0, d_max)` donde `d_max` = máxima distancia entre estaciones
-- MCMC: 50 000 iter, 5 000 burn-in, thin=10
-- Comparación con C1 mediante DIC (ambos Normal)
-- Visualización: mapa con contornos de concentración predicha
+**Variables en este modelo:**
+| Variable | Rol | Interpretación |
+|----------|-----|----------------|
+| $\text{PM2.5}_i$ | Respuesta | Concentración diaria en la observación $i$ |
+| $\alpha$ | Intercepto global | Media de log-PM2.5 cuando $w_j = 0$ |
+| $\alpha_j$ | Efecto aleatorio | Desvío de la estación $j$, extraído de $N(0, \sigma_\alpha^2)$ |
+| $\tau_\alpha$ | Hiperprecisión | Precisión de la distribución de efectos estación |
+| $\sigma_\alpha$ | Hiper-SD | Magnitud típica de las diferencias entre estaciones |
+| $\beta_1, \beta_2, \beta_3, \beta_4$ | Pendientes | Efectos globales de clima y estacionalidad |
+| $\tau$ | Precisión residual | Varianza dentro de estación (después de quitar $w_j$) |
 
-> **Conexión con temario:** Tema 7 — Modelos espaciales, procesos Gaussianos.
+- $\sigma_\alpha \approx 0.13$ implica que la mayoría de estaciones se desvían ±0.26 log-unidades (≈ ±30%) del promedio global.
+- **Uso:** Compromiso entre A (global) y B (fijos). Útil cuando hay muchas estaciones con pocos datos (shrinkage hacia la media).
+- **Resultado:** DIC = 1463.2, pseudo-R² = 0.349, σ.α = 0.131
+- **Hallazgo:** Con ~200 obs/estación, el shrinkage jerárquico no mejora sobre efectos fijos. Los alphaj son similares a B pero con IC más amplios.
 
 ---
 
-## Comparación de modelos
+### Modelo D — Tendencia espacial directa (lat/lon lineal)
+> **Pregunta:** ¿Basta con una tendencia lineal en latitud/longitud para capturar el patrón espacial, o necesitamos un modelo no lineal como el GP?
 
-| Modelo | Distribución | Estructura | DIC comparable con | Pseudo-R² |
-|--------|-------------|------------|-------------------|-----------|
-| A | Normal log | Global (sin grupos) | B, C1, E | Sí |
-| B | Normal log | Efectos fijos por ciudad | A, C1, E | Sí |
-| C1 | Normal log | Jerárquico ciudad→estación | A, B, E | Sí |
-| C2 | Gamma | Jerárquico ciudad→estación | — (sólo R²) | Sí |
-| E | Normal log | Espacial GP + covariables | A, B, C1 | Sí |
+```
+log(PM2.5_i) ~ N(μ_i, τ)
+μ_i = α + β₁·temp_i + β₂·hr_i + β₃·sen_t_i + β₄·cos_t_i + β₅·lat_i + β₆·lon_i
+```
 
-**Reglas de comparación:**
-- DIC solo comparable dentro de la misma familia (Normal log vs Normal log; Gamma vs Gamma)
-- Pseudo-R² = cor(Y_obs, Ŷ)² comparable entre **todas** las especificaciones
-- Para C2 (Gamma) calcular R² en escala original: `cor(pm25, yf1_mean)²`
+**Variables en este modelo:**
+| Variable | Rol | Interpretación |
+|----------|-----|----------------|
+| $\text{PM2.5}_i$ | Respuesta | Concentración diaria en escala log |
+| $\mu_i$ | Media | Valor esperado de log-PM2.5 |
+| $\alpha$ | Intercepto | log-PM2.5 global cuando todas las X = 0 |
+| $\beta_1, \beta_2, \beta_3, \beta_4$ | Pendientes | Efectos de clima y estacionalidad (mismo significado que A) |
+| $\beta_5$ | Pendiente lat | Cambio en log-PM2.5 por cada 1-SD de latitud |
+| $\beta_6$ | Pendiente lon | Cambio en log-PM2.5 por cada 1-SD de longitud |
+| $\tau$ | Precisión | Varianza residual |
+
+- Latitud y longitud estandarizadas (media 0, SD 1) para comparabilidad con temp/HR.
+- **Uso:** Prueba de si el patrón espacial es un gradiente lineal simple. Si D ≈ A, el gradiente lineal no aporta.
+- **Resultado:** DIC = 1614.6, pseudo-R² = 0.294
+- **Hallazgo:** β_lat = −0.005 (IC incluye 0), β_lon = 0.011 (IC incluye 0). Ambos no significativos. El patrón espacial **no es un gradiente lineal** — requiere un modelo no lineal (GP).
 
 ---
 
-## Estructura del reporte escrito
+### Modelo C2 — Jerárquico Gamma (escala original)
+> **Pregunta:** ¿Es la distribución Gamma (que respeta el soporte positivo de PM2.5) mejor que la Normal log-transformada para predecir en escala original?
 
-Alineada estrictamente con las indicaciones del profesor:
+```
+PM2.5_i ~ Gamma(a, a/μ_i)
+log(μ_i) = α + αⱼ[estación[i]] + β₁·tempc_i + β₂·hrc_i + β₃·sen_t_i + β₄·cos_t_i
+```
 
-1. **Introducción** — descripción del problema de contaminación en México, contexto de salud pública (OMS, normas mexicanas), ciudades elegidas, objetivos de los 5 incisos.
-2. **Descripción de la información** — tabla de variables con escalas de medición, descriptivas (n, media, sd, min, max por ciudad), análisis exploratorio:
-   - Serie de tiempo de PM2.5 promedio por ciudad (2023)
-   - Boxplot de PM2.5 por mes y ciudad
-   - Boxplot de PM2.5 por estación dentro de cada ciudad
-   - Histograma de log(PM2.5) para verificar normalidad aproximada
-   - Mapa de estaciones con coordenadas (lat, lon)
-   - Correlación entre PM2.5 y covariables meteorológicas
-3. **Modelado e implementación** — especificación matemática completa de los 5 modelos, distribuciones iniciales con justificación, detalles de corridas JAGS (iteraciones, burn-in, thinning, número de cadenas), diagnóstico de convergencia (trazas, medias ergódicas, ACF).
-4. **Interpretación de resultados** — resumen de estimadores (media posterior + IC 95%), selección de variables importantes (IC excluye cero), comparación de modelos (tabla DIC/R²), respuesta a cada objetivo, recomendaciones de política pública.
-5. **Referencias** — fuentes consultadas: SINAICA, OMS, papers de calidad del aire, apuntes de clase.
-6. **Apéndice** — código R completo y archivos `.txt` de JAGS. **Sin código en las secciones i–iv.**
+**Variables en este modelo:**
+| Variable | Rol | Interpretación |
+|----------|-----|----------------|
+| $\text{PM2.5}_i$ | Respuesta | Concentración diaria en **escala original** (no log) |
+| $\mu_i$ | Media Gamma | Valor esperado de PM2.5 para la observación $i$ |
+| $a$ | Forma | Parámetro de forma de la Gamma (controla asimetría) |
+| $\alpha$ | Intercepto | log-media cuando todas las covariables = 0 |
+| $\alpha_j$ | Efecto estación | Desvío en escala log de la estación $j$ |
+| $\text{tempc}_i, \text{hrc}_i$ | Covariables | Temperatura y HR **centradas** (media=0, no estandarizadas) |
+| $\beta_1, \beta_2, \beta_3, \beta_4$ | Pendientes | Cambio en log-μ por unidad de covariable centrada |
+
+- Covariables centradas (no divididas por SD) para mejor comportamiento numérico en Gamma.
+- **Uso:** Modelo alternativo en escala original. No comparable por DIC con A/B/C1/D/E (familia diferente).
+- **Resultado:** *En ejecución*
 
 ---
 
-## Instrucciones para Claude Code
-
-Pega esto en Claude Code para arrancar el proyecto:
+### Modelo E — Espacial con Proceso Gaussiano
+> **Pregunta:** Dadas las 10 estaciones observadas, ¿podemos predecir PM2.5 promedio en los 141 municipios/alcaldías del Valle de México usando un modelo de correlación espacial?
 
 ```
-Estoy trabajando en mi proyecto final de Regresión Avanzada (maestría, ITAM).
-El tema es análisis bayesiano de calidad del aire en México usando JAGS.
+log(PM2.5_i) ~ N(μ_i, τ)
+μ_i = α + β₁·temp_i + β₂·hr_i + β₃·sen_t_i + β₄·cos_t_i + w(s_i)
+w(s) ~ GP(0, Σ)    donde    Σ_ij = σ²_spatial · exp(-d_ij / ρ)
+```
 
-Contexto:
-- Datos: concentración diaria de PM2.5 de estaciones SINAICA 
-  (CDMX, Guadalajara, Monterrey), año 2023, ~4 estaciones por ciudad
-- Variables: PM2.5, temperatura, humedad relativa, coordenadas (lat,lon)
-- Software: R + R2jags
-- Los datos los voy a descargar manualmente de https://sinaica.inecc.gob.mx/data.php?tipo=V
-  y los archivos CSV los pondré en una carpeta llamada /data/raw/
+**Variables en este modelo:**
+| Variable | Rol | Interpretación |
+|----------|-----|----------------|
+| $\text{PM2.5}_i$ | Respuesta | Concentración diaria en la estación observada $i$ |
+| $\mu_i$ | Media | Valor esperado combinando covariables + efecto espacial |
+| $w(s_i)$ | Efecto espacial | Desvío log-PM2.5 atribuible a la ubicación geográfica $s_i$ |
+| $\Sigma$ | Covarianza | Matriz $J \times J$ donde $\Sigma_{ij}$ = covarianza entre estaciones $i$ y $j$ |
+| $\sigma_{\text{spatial}}$ | Hiper-SD | Magnitud de la variación espacial (cuánto varía $w$) |
+| $\rho$ | Rango espacial | Distancia donde correlación espacial cae a $e^{-1} \approx 0.37$ |
+| $d_{ij}$ | Distancia | Distancia euclidiana (grados) entre estaciones $i$ y $j$ |
+| $\beta_1, \beta_2, \beta_3, \beta_4$ | Pendientes | Efectos globales de clima y estacionalidad (mismo significado que A) |
 
-Necesito que me ayudes con lo siguiente en orden:
+- Kernel exponencial: estaciones a $< 9$ km tienen correlación $> 0.37$; a $> 27$ km la correlación es $< 0.05$.
+- Kriging bayesiano post-hoc: para cada muestra MCMC de C1, calculamos $w_{\text{pred}} = \Sigma_{\text{pred,obs}} \Sigma_{\text{obs,obs}}^{-1} \alpha_j$.
+- **Uso:** Interpolación espacial a zonas sin sensores. Es el objetivo final del proyecto.
+- **Resultado (10 estaciones originales):** Mapa de predicción para 141 polígonos. Rango: 17.8–20.6 µg/m³.
+- **Hallazgo (10 estaciones):** Tláhuac/Valle de Chalco (+1.8 vs promedio) es la zona más contaminada; Álvaro Obregón/Pedregal (−1.0) la más limpia.
+- **Resultado v2 (14 estaciones):** Rango: 16.3–19.5 µg/m³ (SD entre polígonos = 0.41). Tláhuac (19.5) y La Paz (19.4) los más contaminados; Zumpango (16.3) y Temascalapa (16.4) los más limpios. El patrón espacial sigue siendo coherente con topografía (cuenca cerrada, ventilación del poniente), pero el rango se comprime ligeramente al tener más puntos de anclaje.
 
-1. Script de limpieza y unión de los CSVs de SINAICA
-   - Leer todos los archivos de /data/raw/
-   - Estandarizar nombres de columnas
-   - Calcular promedio diario de PM2.5, temperatura y humedad por estación
-   - Agregar columnas: ciudad, estacion, lat, lon, dia_año, mes, dia_semana
-   - Calcular sen_t = sin(2*pi*dia_año/365), cos_t = cos(2*pi*dia_año/365)
-   - Filtrar valores negativos o fuera de rango (PM2.5 > 500 µg/m³, temp < -10 o > 50)
-   - Guardar dataset limpio en /data/clean/pm25_clean.csv
+---
 
-2. Script de análisis exploratorio (EDA)
-   - Serie de tiempo de PM2.5 promedio por ciudad (2023)
-   - Boxplot de PM2.5 por mes y ciudad
-   - Boxplot de PM2.5 por estación dentro de cada ciudad
-   - Histograma de log(PM2.5) con densidad superpuesta
-   - Mapa de estaciones con tamaño proporcional a PM2.5 promedio
-   - Matriz de correlación entre PM2.5 y covariables
-   - Guardar gráficas en /output/figures/
+## Comparación de modelos (resultados actuales)
 
-3. Modelos JAGS — empezar por el Modelo A (Normal global):
-   - Archivo ExFinal_A.txt con el modelo BUGS
-   - Script R para correr el modelo con R2jags
-   - Diagnóstico: traza, promedio ergódico, histograma, ACF para α y βs
-   - Resumen de distribución posterior (media, sd, IC 2.5%, IC 97.5%)
-   - DIC y pseudo-R²
+| Modelo | Pregunta | DIC | Pseudo-R² | σ residual / CV |
+|--------|----------|-----|-----------|-----------------|
+| A | ¿Clima + estacionalidad basta? | 1613.0 | 0.292 | σ = 0.357 |
+| B | ¿Efectos fijos por estación mejoran? | **1462.7** | **0.349** | σ = 0.344 |
+| C1 | ¿Jerárquico es mejor que fijos? | 1463.2 | 0.349 | σ = 0.344 |
+| D | ¿Un gradiente lineal lat/lon captura el espacial? | 1614.6 | 0.294 | σ = 0.357 |
+| C2 | ¿Gamma es mejor que Normal log? | — | *pendiente* | — |
+| E | ¿Podemos predecir en zonas sin sensor? | — | — | — |
 
-Los otros modelos (B, C1, C2, E) los iremos haciendo después uno por uno.
-Usa la misma estructura de código que en el parcial (adjunto como referencia):
-- funciones prob(), cadenas con 2 colores (grey50 y firebrick2)
-- guardar imágenes en /output/figures/
-- guardar tablas en CSV
+**Conclusión intermedia (datos originales 10 estaciones):**
+- La estructura espacial (estación) reduce el DIC en ~150 puntos y aumenta el pseudo-R² de 0.29 a 0.35.
+- Efectos fijos (B) y jerárquico (C1) son prácticamente equivalentes con ~200 obs/estación.
+- **Modelo D valida la necesidad del GP:** una tendencia lineal lat/lon no es significativa (β_lat y β_lon con IC que incluyen 0) y no mejora sobre el modelo global A. El patrón espacial es **no lineal** — requiere un Proceso Gaussiano (Modelo E) o efectos fijos/jerárquicos.
+
+### Resultados con datos v2 (14 estaciones, 2,617 obs)
+
+| Modelo | Pregunta | DIC | Pseudo-R² | σ residual |
+|--------|----------|-----|-----------|------------|
+| A | ¿Clima + estacionalidad basta? | 2942.6 | 0.314 | 0.424 |
+| B | ¿Efectos fijos por estación mejoran? | **2723.8** | **0.375** | 0.406 |
+| C1 | ¿Jerárquico es mejor que fijos? | **2723.4** | 0.375 | 0.406 |
+| D | ¿Gradiente lineal lat/lon captura espacial? | 2841.3 | 0.340 | 0.416 |
+| E | ¿Podemos predecir en zonas sin sensor? | — | — | — |
+
+**Hallazgos v2:**
+- El patrón de comparación A < D < B ≈ C1 se mantiene con 14 estaciones.
+- C1 gana marginalmente sobre B (DIC 2723.4 vs 2723.8), confirmando que el shrinkage jerárquico es ligeramente preferible con más estaciones.
+- σ residual ligeramente mayor (0.406 vs 0.344) porque las 4 estaciones nuevas aportan más heterogeneidad espacial.
+- **Modelo E v2:** predicciones para 141 polígonos con rango 16.3–19.5 µg/m³ (SD = 0.41). Tláhuac es la zona más contaminada (19.5), Zumpango la más limpia (16.3).
+
+---
+
+## Estructura del proyecto
+
+```
+Contaminacion-CDMX/
+├── data/
+│   ├── raw/                  # CSVs horarios de SINAICA (2023)
+│   ├── clean/                # Datasets diarios listos para análisis
+│   └── gadm_mexico/          # Shapefile GADM nivel 2
+├── scripts/
+│   ├── descarga_masiva_valle.R
+│   ├── limpieza_valle_mexico.R
+│   ├── eda_valle_mexico.R
+│   ├── mapa_valle_mexico_v2.R
+│   ├── jags_modelo_A_valle.txt
+│   ├── jags_modelo_B_valle.txt
+│   ├── jags_modelo_C1_valle.txt
+│   ├── modelo_A_valle.R
+│   ├── modelo_B_valle.R
+│   ├── modelo_C1_valle.R
+│   ├── modelo_E_valle.R
+│   └── mapa_E_mejorado.R
+├── output/
+│   ├── modelo_A_valle.RData
+│   ├── modelo_B_valle.RData
+│   ├── modelo_C1_valle.RData
+│   └── figures/              # Mapas, EDA, diagnósticos
+├── archive/                  # Versiones obsoletas
+└── README.md
 ```
 
 ---
 
-## Descarga de datos — paso a paso
+## Visualización espacial
 
-1. Ir a `https://sinaica.inecc.gob.mx/data.php?tipo=V`
-2. Seleccionar: **Ciudad de México → Valle de México → [estación] → PM2.5 → 01/01/2023 a 31/12/2023**
-3. Descargar CSV → guardar como `cdmx_[estacion]_pm25_2023.csv`
-4. Repetir para **temperatura** y **humedad relativa** de las mismas estaciones
-5. Repetir para Guadalajara (Jalisco) y Monterrey (Nuevo León)
-6. Anotar latitud y longitud de cada estación (aparecen en el portal o en la ficha técnica de SINAICA)
-7. Organizar en carpeta `/data/raw/`
+### Mapa observado (10 estaciones)
+- Shapefile GADM nivel 2 (16 alcaldías CDMX + 125 municipios Edomex)
+- Coloreo de polígonos con estaciones según PM2.5 promedio
+- Puntos proporcionales al valor de PM2.5
 
-**Nombres de archivo sugeridos:**
-```
-cdmx_pedregal_pm25_2023.csv
-cdmx_pedregal_temp_2023.csv
-cdmx_pedregal_hr_2023.csv
-...
-gdl_centro_pm25_2023.csv
-mty_obispado_pm25_2023.csv
-```
-
-**Archivo auxiliar:** Crear `estaciones.csv` con:
-```csv
-ciudad,estacion,lat,lon
-cdmx,Pedregal,19.32528,-99.20417
-cdmx,Merced,19.42472,-99.11972
-...
-```
+### Mapa Modelo E — Predicción espacial (141 polígonos)
+- Kriging bayesiano con kernel exponencial (ρ = 9 km)
+- Predicción de PM2.5 promedio en cada municipio/alcaldía
+- Anomalía respecto al promedio global (18.8 µg/m³)
 
 ---
 
-## Cronograma sugerido
+## Decisiones metodológicas (log)
 
-| Semana | Tarea |
-|--------|-------|
-| 1 | Descarga de datos + limpieza + EDA |
-| 2 | Modelo A (Normal global) + Modelo B (efectos fijos por ciudad) |
-| 3 | Modelo C1 (jerárquico Normal) + Modelo C2 (jerárquico Gamma) |
-| 4 | Modelo E (espacial GP) + comparación global + redacción del reporte |
-| 5 | Presentación (10 min: ~2 min intro/EDA + 5 min modelos/comparación + 3 min conclusiones) |
+### 1. Ampliación de 10 a 56 estaciones (jul 2025)
+**Contexto:** El análisis original usaba 10 estaciones con datos completos. El usuario solicitó expandir a todos los territorios del Valle de México (16 alcaldías CDMX + 59 municipios Edomex + Tizayuca Hidalgo).
 
----
+**Decisión:** Descargar datos de las 56 estaciones SINAICA dentro de estos 76 territorios.
+- *Justificación:* Más estaciones = mejor estimación de la estructura espacial y más precisión en la predicción del Modelo E.
+- *Limitación:* Solo 15 de 59 municipios de Edomex tienen estaciones. 44 municipios carecen de monitoreo oficial.
+
+### 2. Descarga mensual por restricción de API (jul 2025)
+**Contexto:** `rsinaica::sinaica_station_data()` tiene límite de 1 mes por llamada.
+
+**Decisión:** Descargar mes por mes (12 llamadas/estación/variable) en lugar de trimestres.
+- *Justificación:* La API rechaza rangas > 1 mes con error "The maximum amount of data you can download is 1 month".
+- *Consecuencia:* La descarga completa toma ~20 minutos para 56 estaciones × 3 variables × 12 meses = 2,016 llamadas.
+
+### 3. Filtro: solo estaciones con PM2.5 + temp + HR
+**Contexto:** Algunas estaciones miden solo PM2.5 (ej. Camarones) o tienen datos faltantes en temp/HR.
+
+**Decisión:** Excluir estaciones que no tengan las 3 variables simultáneamente.
+- *Justificación:* Todos los modelos requieren temp y HR como covariables. Incluir estaciones incompletas introduciría NA que reducirían la muestra efectiva.
+- *Consecuencia:* De 56 estaciones descargadas, probablemente ~15-20 queden excluidas por falta de temp/HR.
+
+### 4. Transformación log(PM2.5)
+**Contexto:** PM2.5 es positivo y tiene cola derecha (valores altos en contingencias).
+
+**Decisión:** Usar `log(PM2.5)` como variable respuesta en modelos A, B, C1, E.
+- *Justificación:* La distribución log-normal aproxima mejor los datos (residuos más simétricos, varianza estabilizada). Permite usar modelos Normal conjugados en JAGS.
+- *Alternativa rechazada:* Modelar en escala original con Gamma (C2) es más fiel al soporte positivo pero complica la comparación con DIC y la implementación espacial.
+
+### 5. Estandarización de temp y HR
+**Contexto:** Temperatura (~19°C) y HR (~47%) tienen escalas muy diferentes.
+
+**Decisión:** Estandarizar (restar media, dividir por SD) antes de introducirlas a JAGS.
+- *Justificación:* Mejora la convergencia MCMC (menos correlación entre α y β). Los priors `dnorm(0, 0.001)` son más informativos cuando las X están en escala comparable.
+- *Interpretación:* β₁ = 0.03 significa que por cada 1-SD de temperatura, log-PM2.5 cambia 0.03.
+
+### 6. Suma-cero en Modelo B
+**Contexto:** Modelo con intercepto + efectos fijos por estación es no identificable (J+1 parámetros para J grupos).
+
+**Decisión:** Aplicar restricción suma-cero post-muestreo: `α.adj = α + mean(αⱼ)` y `αⱼ.adj = αⱼ - mean(αⱼ)`.
+- *Justificación:* JAGS no permite restricciones duras en priors. El ajuste post-hoc garantiza identificabilidad sin modificar el modelo.
+- *Alternativa rechazada:* Dejar un efecto como referencia complica la interpretación cuando no hay una estación "obvia" de control.
+
+### 7. Rango espacial ρ = 0.08° (~9 km) en Modelo E
+**Contexto:** El Modelo E requiere especificar la escala espacial del kernel exponencial.
+
+**Decisión:** Fijar ρ = 0.08° (~8.9 km a esta latitud).
+- *Justificación:* Con solo 10 estaciones, estimar ρ dentro de JAGS es inviable. El valor se eligió como compromiso entre: (a) la distancia mínima entre estaciones (~5 km, para que estaciones cercanas se correlacionen) y (b) el rango efectivo (~3ρ = 27 km, que cubre la mayoría del Valle de México).
+- *Sensibilidad:* Un ρ menor daría mapas más "engranados" (más contraste local); un ρ mayor los suavizaría excesivamente.
+
+### 8. Predicción temporal Q4 (Oct-Dic 2023) — jul 2025
+**Contexto:** SINAICA no tiene datos de Oct-Dic 2023 para ninguna estación. El dataset se limita a ene-sep.
+
+**Decisión:** Usar las muestras posteriores del Modelo C1 para predecir PM2.5 en los 92 días de Q4, asumiendo condiciones meteorológicas típicas (climatología de temp/HR).
+- *Justificación:* El modelo ya captura la estacionalidad vía Fourier. Con temp/HR representativos, la predictiva es razonable.
+- *Método:* temp(Oct-Nov) = temp(Sept promedio); temp(Dic) = temp(Ene promedio). HR similar.
+- *Resultado:* Oct=15.5, Nov=18.6, Dic=18.2 µg/m³. Patrón coherente: recuperación hacia niveles invernales tras el mínimo estival.
+- *Limitación:* No captura anomalías meteorológicas reales de Q4 2023 (ej. contingencias, eventos El Niño).
+
+### 9. Kriging post-hoc en lugar de GP dentro de JAGS
+**Contexto:** Implementar un Proceso Gaussiano completo en JAGS con 10 estaciones + 141 puntos de predicción es computacionalmente inviable.
+
+**Decisión:** Usar kriging bayesiano post-hoc: ajustar Modelo C1 en JAGS, luego interpolar espacialmente en R usando las muestras posteriores de αⱼ.
+- *Justificación:* JAGS no maneja bien inversión de matrices de covarianza que dependen de parámetros. El enfoque post-hoc es estándar en Bayesiano espacial ("plug-in" de hiperparámetros).
+- *Limitación:* No incorpora la incertidumbre de ρ en la predicción espacial (ρ está fijo).
 
 ## Notas técnicas
 
-- **Transformación:** usar `log(PM2.5)` como Y para cumplir supuesto de normalidad (igual que el parcial usó `log(siniestros)`)
-- **Estandarización de covariables:** centrar y escalar temperatura y humedad antes de entrar al modelo Gamma (evita problemas numéricos, como la prima en el modelo Gamma del parcial)
-- **Valores faltantes:** SINAICA reporta -99 o celdas vacías para datos sin medición — filtrar antes de modelar
-- **Identificabilidad en efectos por ciudad (Modelo B):** aplicar ajuste suma-cero dentro de JAGS usando `mean()`, igual que en el modelo (e) del parcial. Monitorear solo las versiones `.adj`.
-- **Thinning:** los modelos jerárquicos (C1, C2) y espacial (E) necesitan adelgazamiento (`thin = 5` o `10`) por autocorrelación en las cadenas
-- **Iteraciones sugeridas:**
-  - Modelos A y B: 10 000 con 1 000 burn-in
-  - Modelos C1, C2 y E: 50 000 con 5 000 burn-in, thin = 10
-- **Pseudo-R²:**
-  - Modelos A, B, C1, E: `cor(log(pm25), yf1_mean)²`
-  - Modelo C2 (Gamma): `cor(pm25, yf1_mean)²` en escala original
-- **DIC:** comparable solo dentro de la misma familia (A/B/C1/E son comparables entre sí; C2 solo se compara vía pseudo-R²)
+- **Transformación:** `log(PM2.5)` para modelos Normal (linealidad + homocedasticidad)
+- **Estandarización:** temp y HR estandarizados (media 0, SD 1) en todos los modelos
+- **Identificabilidad:** suma-cero en efectos fijos (Modelo B)
+- **MCMC:** 12,000 iteraciones, 3,000 burn-in, thin=3 (6,000 muestras efectivas)
+- **DIC:** comparable solo dentro de familia Normal log (A, B, C1, E)
+- **Pseudo-R²:** cor(logy, ŷ)², comparable entre todos los modelos

@@ -1,0 +1,22 @@
+model {
+  for(i in 1:n) {
+    y[i] ~ dgamma(r, r / mu[i])
+    log(mu[i]) <- alpha + alphaj[est[i]] 
+                  + beta[1]*temp[i] + beta[2]*hr[i] 
+                  + beta[3]*sen_t[i] + beta[4]*cos_t[i]
+    yf1[i] ~ dgamma(r, r / mu[i])
+  }
+  
+  # Efectos aleatorios por estacion
+  for(j in 1:J) {
+    alphaj[j] ~ dnorm(0, tau.alphaj)
+  }
+  
+  alpha ~ dnorm(2.5, 0.1)
+  for(j in 1:4) { beta[j] ~ dnorm(0, 0.001) }
+  
+  r ~ dgamma(0.01, 0.01)
+  tau.alphaj ~ dgamma(0.01, 0.01)
+  sigma.alphaj <- 1 / sqrt(tau.alphaj)
+  cv <- 1 / sqrt(r)
+}
