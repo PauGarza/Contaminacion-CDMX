@@ -12,9 +12,6 @@ data/raw/*.csv
 output/*.RData
 output/figures/*.RData
 
-# Figuras (regenerables via scripts)
-output/figures/*.png
-
 # Shapefiles grandes
 data/gadm_mexico/
 data/*.zip
