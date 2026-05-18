@@ -31,7 +31,7 @@ breaks <- c(-3, -2, -1, -0.5, 0, 0.5, 1, 2, 3)
 valle$cat_anom <- cut(valle$anomalia, breaks = breaks, include.lowest = TRUE)
 
 colors <- c("#2166ac", "#4393c3", "#92c5de", "#d1e5f0", "#f7f7f7",
-            "#fddbc7", "#f4a582", "#d6604d", "#b2182b")
+            "#fddbc7", "#f4a582", "#d6604d")
 
 get_color <- function(x) {
   if(is.na(x)) return("gray50")
@@ -45,7 +45,7 @@ est_obs$numero <- 1:nrow(est_obs)
 png(file.path(outdir, "mapa_anomalia_E_valle_v2.png"), width = 1400, height = 1000, res = 120)
 par(mar = c(2, 2, 4, 8))
 
-plot(valle, "cat_anom", col = colors, 
+plot(valle, "cat_anom", col = colors,
      main = paste0("Anomalia espacial PM2.5 — Modelo E v2 (GP, rho=0.08°, 14 est)\n",
                    "Prediccion - Media global (", round(media_global, 1), " ug/m3)"))
 
@@ -56,7 +56,7 @@ text(est_obs$lon, est_obs$lat, labels = est_obs$numero,
 legend("bottomleft", inset = c(0.02, 0.02),
        legend = c("< -2", "-2 a -1", "-1 a -0.5", "-0.5 a 0",
                   "0 a 0.5", "0.5 a 1", "1 a 2", "> 2"),
-       fill = colors[-c(1, length(colors))],
+       fill = colors,
        title = "Anomalia (ug/m3)", bg = "white", cex = 0.9)
 legend("right", inset = c(-0.02, 0),
        legend = paste0(est_obs$numero, ". ", est_obs$estacion),

@@ -35,7 +35,7 @@ breaks <- c(-3, -2, -1, -0.5, 0, 0.5, 1, 2, 3)
 valle$cat_anom <- cut(valle$anomalia, breaks = breaks, include.lowest = TRUE)
 
 colors <- c("#2166ac", "#4393c3", "#92c5de", "#d1e5f0", "#f7f7f7",
-            "#fddbc7", "#f4a582", "#d6604d", "#b2182b")
+            "#fddbc7", "#f4a582", "#d6604d")
 
 png(file.path(outdir, "mapa_anomalia_espacial_E_valle_v2.png"),
     width = 1200, height = 1000, res = 120)
@@ -68,7 +68,7 @@ text(est_obs$lon, est_obs$lat, labels = est_obs$estacion,
 legend("bottomleft",
        legend = c("< -2", "-2 a -1", "-1 a -0.5", "-0.5 a 0",
                   "0 a 0.5", "0.5 a 1", "1 a 2", "> 2"),
-       fill = colors[-c(1, length(colors))],
+       fill = colors,
        title = "Anomalia (ug/m3)", bg = "white", cex = 0.85)
 dev.off()
 cat("Mapa 1 guardado:", file.path(outdir, "mapa_anomalia_espacial_E_valle_v2.png"), "\n")
@@ -96,7 +96,7 @@ cat("\nRango anomalias observadas:",
 breaks_obs <- c(-6, -4, -2, -1, 0, 1, 2, 4, 6)
 est_obs$cat_obs <- cut(est_obs$anomalia_obs, breaks = breaks_obs, include.lowest = TRUE)
 
-colors_obs <- c("#053061", "#2166ac", "#4393c3", "#92c5de", "#f7f7f7",
+colors_obs <- c("#2166ac", "#4393c3", "#92c5de", "#f7f7f7",
                 "#f4a582", "#d6604d", "#b2182b", "#67001f")
 
 get_color <- function(x) {
@@ -146,7 +146,7 @@ text(est_obs$lon, est_obs$lat, labels = est_obs$estacion,
 legend("bottomleft",
        legend = c("< -4", "-4 a -2", "-2 a -1", "-1 a 0",
                   "0 a 1", "1 a 2", "2 a 4", "> 4"),
-       fill = colors_obs[-c(1, length(colors_obs))],
+       fill = colors_obs,
        title = "Obs - Pred (ug/m3)", bg = "white", cex = 0.85)
 dev.off()
 cat("Mapa 2 guardado:", file.path(outdir, "mapa_anomalia_observada_E_valle_v2.png"), "\n")

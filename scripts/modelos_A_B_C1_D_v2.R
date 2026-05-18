@@ -151,18 +151,7 @@ print(out.sum.t.B)
 alphaj_adj <- resB$mean$alphaj - mean(resB$mean$alphaj)
 alpha_adj  <- resB$mean$alpha  + mean(resB$mean$alphaj)
 
-out.alphaj.B <- out.sum.B[grep("alphaj", rownames(out.sum.B)), c(1,3,7)]
-out.alphaj.B <- out.alphaj.B[1:J, ]
-
-k <- J
-
-png(file.path(outdir, "efectos_estacion_B_v2.png"), width = 800, height = 600)
-par(mfrow=c(1,1))
-plot(1:k, out.alphaj.B[,1], xlab="Estacion", ylab="", ylim=c(ymin,ymax),
-     main="Modelo B: Efectos fijos por estacion (alphaj)")
-segments(1:k, out.alphaj.B[,2], 1:k, out.alphaj.B[,3])
-abline(h=0, col="grey70")
-dev.off()
+out.alphaj.B <- out.sum.B[grep("^alphaj\\.adj\\[", rownames(out.sum.B)), c(1,3,7)]
 
 alphaj_df <- data.frame(estacion = levels(as.factor(df$estacion)),
                         alphaj_media = resB$mean$alphaj,
@@ -214,14 +203,23 @@ dimnames(out.sum.t.C1)[[2]][4] <- "prob"
 cat("\n--- Betas Modelo C1 ---\n")
 print(out.sum.t.C1)
 
-out.alphaj.C1 <- out.sum.C1[grep("alphaj", rownames(out.sum.C1)), c(1,3,7)]
-out.alphaj.C1 <- out.alphaj.C1[1:J, ]
+out.alphaj.C1 <- out.sum.C1[grep("^alphaj\\[", rownames(out.sum.C1)), c(1,3,7)]
 
 k <- J
+ymin <- min(out.alphaj.B[,2], out.alphaj.C1[,2]) - 0.05
+ymax <- max(out.alphaj.B[,3], out.alphaj.C1[,3]) + 0.05
+
+png(file.path(outdir, "efectos_estacion_B_v2.png"), width = 800, height = 600)
+par(mfrow=c(1,1))
+plot(1:k, out.alphaj.B[,1], xlab="Estacion", ylab="log-unidades", ylim=c(ymin,ymax),
+     main="Modelo B: Efectos fijos por estacion (alphaj, suma-cero)")
+segments(1:k, out.alphaj.B[,2], 1:k, out.alphaj.B[,3])
+abline(h=0, col="grey70")
+dev.off()
 
 png(file.path(outdir, "efectos_estacion_C1_v2.png"), width = 800, height = 600)
 par(mfrow=c(1,1))
-plot(1:k, out.alphaj.C1[,1], xlab="Estacion", ylab="", ylim=c(ymin,ymax),
+plot(1:k, out.alphaj.C1[,1], xlab="Estacion", ylab="log-unidades", ylim=c(ymin,ymax),
      main="Modelo C1: Efectos aleatorios por estacion (alphaj)")
 segments(1:k, out.alphaj.C1[,2], 1:k, out.alphaj.C1[,3])
 abline(h=0, col="grey70")
