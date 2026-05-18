@@ -5,6 +5,7 @@ options(repos="http://cran.itam.mx/")
 
 library(R2jags)
 library(dplyr)
+library(ggplot2)
 
 prob <- function(x) {
   min(length(x[x>0])/length(x), length(x[x<0])/length(x))
@@ -100,13 +101,26 @@ R2.A <- cor(logy, apply(resA$sims.list$yf1, 2, mean))^2
 cat("Modelo A: DIC =", resA$DIC, "| Pseudo-R2 =", round(R2.A, 4), "\n")
 
 out.yf.A <- out.sum.A[grep("yf1", rownames(out.sum.A)), ]
-png(file.path(outdir, "pred_vs_obs_A_v2.png"), width = 600, height = 600)
-par(mfrow=c(1,1))
-plot(logy, out.yf.A[,1], xlab="Observado (log)", ylab="Predicho (log)",
-     main="Modelo A: Observado vs Predicho",
-     xlim=range(logy, out.yf.A[,c(1,3,7)]), ylim=range(logy, out.yf.A[,c(1,3,7)]))
-abline(a=0, b=1, col="grey70")
-dev.off()
+df_pvo <- data.frame(obs = logy, pred = out.yf.A[, 1])
+rng <- range(logy, out.yf.A[, c(1, 3, 7)])
+p_pvo <- ggplot(df_pvo, aes(x = obs, y = pred)) +
+  geom_abline(slope = 1, intercept = 0, color = "gray70", linetype = "dashed", size = 0.7) +
+  geom_point(color = "#7F8C8D", alpha = 0.40, size = 1.2) +
+  xlim(rng) + ylim(rng) +
+  labs(
+    title    = "Modelo A: Observado vs Predicho",
+    subtitle = "log(PM2.5) observado vs media posterior predictiva",
+    x        = "log(PM2.5) observado",
+    y        = "log(PM2.5) predicho (media posterior)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
+    plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
+    panel.grid.minor = element_blank()
+  )
+ggsave(file.path(outdir, "pred_vs_obs_A_v2.png"), plot = p_pvo,
+       width = 5, height = 5, dpi = 120)
 
 write.csv(data.frame(parametro = c("alpha","beta_temp","beta_hr","beta_sen","beta_cos","sigma","DIC","pseudo_R2"),
                      media = c(resA$mean$alpha, resA$mean$beta, resA$mean$sigma, resA$DIC, R2.A)),
@@ -209,21 +223,47 @@ k <- J
 ymin <- min(out.alphaj.B[,2], out.alphaj.C1[,2]) - 0.05
 ymax <- max(out.alphaj.B[,3], out.alphaj.C1[,3]) + 0.05
 
-png(file.path(outdir, "efectos_estacion_B_v2.png"), width = 800, height = 600)
-par(mfrow=c(1,1))
-plot(1:k, out.alphaj.B[,1], xlab="Estacion", ylab="log-unidades", ylim=c(ymin,ymax),
-     main="Modelo B: Efectos fijos por estacion (alphaj, suma-cero)")
-segments(1:k, out.alphaj.B[,2], 1:k, out.alphaj.B[,3])
-abline(h=0, col="grey70")
-dev.off()
+est_labels <- levels(as.factor(df$estacion))
 
-png(file.path(outdir, "efectos_estacion_C1_v2.png"), width = 800, height = 600)
-par(mfrow=c(1,1))
-plot(1:k, out.alphaj.C1[,1], xlab="Estacion", ylab="log-unidades", ylim=c(ymin,ymax),
-     main="Modelo C1: Efectos aleatorios por estacion (alphaj)")
-segments(1:k, out.alphaj.C1[,2], 1:k, out.alphaj.C1[,3])
-abline(h=0, col="grey70")
-dev.off()
+df_efB <- data.frame(
+  estacion = factor(est_labels, levels = est_labels),
+  media = out.alphaj.B[, 1], q025 = out.alphaj.B[, 2], q975 = out.alphaj.B[, 3]
+)
+pB <- ggplot(df_efB, aes(x = estacion, y = media, ymin = q025, ymax = q975)) +
+  geom_hline(yintercept = 0, color = "gray70", linetype = "dashed", linewidth = 0.6) +
+  geom_errorbar(width = 0.3, color = "#3498DB", linewidth = 0.8) +
+  geom_point(color = "#3498DB", size = 2.8) +
+  ylim(ymin, ymax) +
+  labs(title = "Modelo B: Efectos fijos por estación (alphaj, suma-cero)",
+       subtitle = "IC 95% posterior — restricción de identificabilidad aplicada en R",
+       x = NULL, y = "Efecto por estación (log-unidades)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+        plot.title = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle = element_text(size = 9, face = "italic", color = "gray30"),
+        panel.grid.minor = element_blank())
+ggsave(file.path(outdir, "efectos_estacion_B_v2.png"), plot = pB,
+       width = 8.5, height = 5, dpi = 120)
+
+df_efC1 <- data.frame(
+  estacion = factor(est_labels, levels = est_labels),
+  media = out.alphaj.C1[, 1], q025 = out.alphaj.C1[, 2], q975 = out.alphaj.C1[, 3]
+)
+pC1 <- ggplot(df_efC1, aes(x = estacion, y = media, ymin = q025, ymax = q975)) +
+  geom_hline(yintercept = 0, color = "gray70", linetype = "dashed", linewidth = 0.6) +
+  geom_errorbar(width = 0.3, color = "#E74C3C", linewidth = 0.8) +
+  geom_point(color = "#E74C3C", size = 2.8) +
+  ylim(ymin, ymax) +
+  labs(title = "Modelo C1: Efectos aleatorios por estación (alphaj)",
+       subtitle = "IC 95% posterior — hiperprior N(0, tau_alpha), shrinkage bayesiano",
+       x = NULL, y = "Efecto por estación (log-unidades)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+        plot.title = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle = element_text(size = 9, face = "italic", color = "gray30"),
+        panel.grid.minor = element_blank())
+ggsave(file.path(outdir, "efectos_estacion_C1_v2.png"), plot = pC1,
+       width = 8.5, height = 5, dpi = 120)
 
 alphaj_C1 <- data.frame(estacion = levels(as.factor(df$estacion)),
                         alphaj_media = resC1$mean$alphaj,

@@ -13,7 +13,9 @@ pred_df <- read.csv(file.path(outdir, "prediccion_espacial_E_valle_v2.csv"), str
 
 est_obs <- df %>%
   group_by(estacion) %>%
-  summarise(lon = mean(lon), lat = mean(lat), pm25_obs = mean(pm25), .groups = "drop")
+  summarise(lon = mean(lon), lat = mean(lat), pm25_obs = mean(pm25), .groups = "drop") %>%
+  arrange(estacion)
+est_obs$numero <- 1:nrow(est_obs)
 
 mex   <- vect("data/gadm_mexico/gadm41_MEX_2.shp")
 valle <- mex[mex$NAME_1 %in% c("Distrito Federal", "México"), ]
@@ -38,34 +40,21 @@ colors <- c("#2166ac", "#4393c3", "#92c5de", "#d1e5f0", "#f7f7f7",
             "#fddbc7", "#f4a582", "#d6604d")
 
 png(file.path(outdir, "mapa_anomalia_espacial_E_valle_v2.png"),
-    width = 1200, height = 1000, res = 120)
-par(mar = c(2, 2, 4, 1))
-plot(valle, "cat_anom", col = colors,
-     main = paste0("Anomalia espacial PM2.5 — Prediccion GP v2 (14 est)\n",
-                   "Desviacion respecto a media global (", round(media_global, 1), " ug/m3)"))
+    width = 1400, height = 1000, res = 120)
+par(oma = c(0, 0, 3, 0), mar = c(2, 2, 1, 9))
+plot(valle, "cat_anom", col = colors)
+mtext("Anomalia espacial PM2.5 — Prediccion GP v2 (14 est)",
+      outer = TRUE, side = 3, line = 1.5, font = 2, cex = 1.05, col = "#2C3E50")
+mtext(paste0("Desviacion respecto a media global (", round(media_global, 1), " ug/m3)"),
+      outer = TRUE, side = 3, line = 0.4, font = 3, cex = 0.85, col = "gray30")
 points(est_obs$lon, est_obs$lat, pch = 21,
        bg = "white", col = "black", cex = 1.8, lwd = 2)
-
-pos_vec <- rep(3, nrow(est_obs))
-names(pos_vec) <- est_obs$estacion
-if("Ajusco Medio" %in% names(pos_vec)) pos_vec["Ajusco Medio"] <- 2
-if("UAM Xochimilco" %in% names(pos_vec)) pos_vec["UAM Xochimilco"] <- 4
-if("Santiago Acahualtepec" %in% names(pos_vec)) pos_vec["Santiago Acahualtepec"] <- 1
-if("Pedregal" %in% names(pos_vec)) pos_vec["Pedregal"] <- 2
-if("Tlalnepantla" %in% names(pos_vec)) pos_vec["Tlalnepantla"] <- 2
-if("Hospital General de México" %in% names(pos_vec)) pos_vec["Hospital General de México"] <- 4
-if("Biblioteca" %in% names(pos_vec)) pos_vec["Biblioteca"] <- 4
-if("FES Aragón" %in% names(pos_vec)) pos_vec["FES Aragón"] <- 4
-if("San Agustín" %in% names(pos_vec)) pos_vec["San Agustín"] <- 2
-if("Gustavo A. Madero" %in% names(pos_vec)) pos_vec["Gustavo A. Madero"] <- 4
-if("Merced" %in% names(pos_vec)) pos_vec["Merced"] <- 2
-if("Nezahualcóyotl" %in% names(pos_vec)) pos_vec["Nezahualcóyotl"] <- 2
-if("Benito Juárez" %in% names(pos_vec)) pos_vec["Benito Juárez"] <- 4
-if("UAM Iztapalapa" %in% names(pos_vec)) pos_vec["UAM Iztapalapa"] <- 2
-
-text(est_obs$lon, est_obs$lat, labels = est_obs$estacion,
-     pos = pos_vec, cex = 0.6, col = "black", font = 2, offset = 0.7)
-legend("bottomleft",
+text(est_obs$lon, est_obs$lat, labels = est_obs$numero,
+     pos = 3, cex = 0.9, col = "black", font = 2, offset = 0.5)
+legend("right", inset = c(-0.04, 0),
+       legend = paste0(est_obs$numero, ". ", est_obs$estacion),
+       title = "Estaciones", bg = "white", cex = 0.7, xpd = TRUE, bty = "n")
+legend("bottomleft", inset = c(0.06, 0.02),
        legend = c("< -2", "-2 a -1", "-1 a -0.5", "-0.5 a 0",
                   "0 a 0.5", "0.5 a 1", "1 a 2", "> 2"),
        fill = colors,
@@ -106,11 +95,13 @@ get_color <- function(x) {
 est_obs$col_punto <- sapply(est_obs$anomalia_obs, get_color)
 
 png(file.path(outdir, "mapa_anomalia_observada_E_valle_v2.png"),
-    width = 1200, height = 1000, res = 120)
-par(mar = c(2, 2, 4, 1))
-plot(valle, col = "gray90", border = "gray70",
-     main = paste0("Anomalia observada PM2.5 — Modelo E v2 (14 est)\n",
-                   "Observado - Predicho por municipio"))
+    width = 1400, height = 1000, res = 120)
+par(oma = c(0, 0, 3, 0), mar = c(2, 2, 1, 9))
+plot(valle, col = "gray90", border = "gray70")
+mtext("Anomalia observada PM2.5 — Modelo E v2 (14 est)",
+      outer = TRUE, side = 3, line = 1.5, font = 2, cex = 1.05, col = "#2C3E50")
+mtext("Observado - Predicho por municipio",
+      outer = TRUE, side = 3, line = 0.4, font = 3, cex = 0.85, col = "gray30")
 for(i in 1:nrow(est_obs)) {
   if(!is.na(est_obs$anomalia_obs[i])) {
     municipio_est <- df$municipio[df$estacion == est_obs$estacion[i]][1]
@@ -123,27 +114,12 @@ for(i in 1:nrow(est_obs)) {
 
 points(est_obs$lon, est_obs$lat, pch = 21,
        bg = est_obs$col_punto, col = "black", cex = 2.5, lwd = 2)
-
-pos_vec2 <- rep(3, nrow(est_obs))
-names(pos_vec2) <- est_obs$estacion
-if("Ajusco Medio" %in% names(pos_vec2)) pos_vec2["Ajusco Medio"] <- 2
-if("UAM Xochimilco" %in% names(pos_vec2)) pos_vec2["UAM Xochimilco"] <- 4
-if("Santiago Acahualtepec" %in% names(pos_vec2)) pos_vec2["Santiago Acahualtepec"] <- 1
-if("Pedregal" %in% names(pos_vec2)) pos_vec2["Pedregal"] <- 2
-if("Tlalnepantla" %in% names(pos_vec2)) pos_vec2["Tlalnepantla"] <- 2
-if("Hospital General de México" %in% names(pos_vec2)) pos_vec2["Hospital General de México"] <- 4
-if("Biblioteca" %in% names(pos_vec2)) pos_vec2["Biblioteca"] <- 4
-if("FES Aragón" %in% names(pos_vec2)) pos_vec2["FES Aragón"] <- 4
-if("San Agustín" %in% names(pos_vec2)) pos_vec2["San Agustín"] <- 2
-if("Gustavo A. Madero" %in% names(pos_vec2)) pos_vec2["Gustavo A. Madero"] <- 4
-if("Merced" %in% names(pos_vec2)) pos_vec2["Merced"] <- 2
-if("Nezahualcóyotl" %in% names(pos_vec2)) pos_vec2["Nezahualcóyotl"] <- 2
-if("Benito Juárez" %in% names(pos_vec2)) pos_vec2["Benito Juárez"] <- 4
-if("UAM Iztapalapa" %in% names(pos_vec2)) pos_vec2["UAM Iztapalapa"] <- 2
-
-text(est_obs$lon, est_obs$lat, labels = est_obs$estacion,
-     pos = pos_vec2, cex = 0.6, col = "black", font = 2, offset = 0.8)
-legend("bottomleft",
+text(est_obs$lon, est_obs$lat, labels = est_obs$numero,
+     pos = 3, cex = 0.9, col = "black", font = 2, offset = 0.5)
+legend("right", inset = c(-0.04, 0),
+       legend = paste0(est_obs$numero, ". ", est_obs$estacion),
+       title = "Estaciones", bg = "white", cex = 0.7, xpd = TRUE, bty = "n")
+legend("bottomleft", inset = c(0.06, 0.02),
        legend = c("< -4", "-4 a -2", "-2 a -1", "-1 a 0",
                   "0 a 1", "1 a 2", "2 a 4", "> 4"),
        fill = colors_obs,

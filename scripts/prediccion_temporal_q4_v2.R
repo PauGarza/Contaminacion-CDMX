@@ -3,6 +3,7 @@
 # ============================================================
 library(dplyr)
 library(lubridate)
+library(ggplot2)
 
 outdir <- "output/figures"
 df <- read.csv("data/clean/pm25_valle_mexico_v2.csv", stringsAsFactors = FALSE)
@@ -87,18 +88,37 @@ write.csv(prom_global, file.path(outdir, "prediccion_temporal_q4_2023_global_v2.
 cat("=== Prediccion Q4 2023 (v2, 14 estaciones) ===\n")
 print(prom_global)
 
-# Grafica
-png(file.path(outdir, "prediccion_temporal_q4_v2.png"), width = 900, height = 500, res = 120)
-mes_ord <- factor(prom_global$mes, levels = c("Octubre", "Noviembre", "Diciembre"))
-plot(as.numeric(mes_ord), prom_global$pm25, type = "b", pch = 19, col = "firebrick2", lwd = 2,
-     xlim = c(0.8, 3.2), ylim = c(10, 25), xaxt = "n", xlab = "", ylab = "PM2.5 (ug/m3)",
-     main = "Prediccion temporal Q4 2023 — Modelo C1 v2 (climatologia)")
-axis(1, at = 1:3, labels = levels(mes_ord))
-segments(1:3, prom_global$q2.5, 1:3, prom_global$q97.5, col = "firebrick2", lwd = 2)
-points(1:3, prom_global$q2.5, pch = "_", col = "firebrick2", cex = 2)
-points(1:3, prom_global$q97.5, pch = "_", col = "firebrick2", cex = 2)
-abline(h = mean(df$pm25), col = "steelblue", lty = 2, lwd = 2)
-legend("topleft", legend = c("Prediccion Q4", "Promedio anual"), 
-       col = c("firebrick2", "steelblue"), lty = c(1, 2), lwd = 2, bg = "white")
-dev.off()
+# Grafica — estilo Otho
+prom_global$mes <- factor(prom_global$mes, levels = c("Octubre", "Noviembre", "Diciembre"))
+promedio_anual  <- mean(df$pm25)
+
+p <- ggplot(prom_global, aes(x = mes, y = pm25, group = 1)) +
+  geom_ribbon(aes(ymin = q2.5, ymax = q97.5,
+                  fill = "Intervalo de Credibilidad (95%)"), alpha = 0.22) +
+  geom_line(aes(color = "Predicción Q4 2023"), linewidth = 1.0, lineend = "round") +
+  geom_point(aes(color = "Predicción Q4 2023"), size = 3) +
+  geom_hline(aes(yintercept = promedio_anual, linetype = "Promedio anual observado"),
+             color = "#3498DB", linewidth = 0.8) +
+  scale_color_manual(values = c("Predicción Q4 2023" = "#2C3E50")) +
+  scale_fill_manual(values  = c("Intervalo de Credibilidad (95%)" = "#E74C3C")) +
+  scale_linetype_manual(values = c("Promedio anual observado" = "dashed")) +
+  labs(
+    title    = "Predicción temporal Q4 2023 — Modelo C1 v2 (climatología)",
+    subtitle = "Predicción mensual global para 14 estaciones del Valle de México",
+    x        = "Mes",
+    y        = expression(paste("Concentración de ", PM[2.5], " (", mu, "g/", m^3, ")")),
+    color    = NULL, fill = NULL, linetype = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position    = "bottom",
+    legend.box         = "vertical",
+    plot.title         = element_text(face = "bold", size = 13, color = "#2C3E50"),
+    plot.subtitle      = element_text(size = 9.5, face = "italic", color = "gray30"),
+    panel.grid.minor   = element_blank(),
+    legend.title       = element_text(face = "bold", size = 9)
+  )
+
+ggsave(file.path(outdir, "prediccion_temporal_q4_v2.png"),
+       plot = p, width = 7.5, height = 4.5, dpi = 120)
 cat("\nGuardado:", file.path(outdir, "prediccion_temporal_q4_v2.png"), "\n")

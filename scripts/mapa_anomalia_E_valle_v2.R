@@ -43,24 +43,26 @@ est_obs        <- est_obs[order(est_obs$estacion), ]
 est_obs$numero <- 1:nrow(est_obs)
 
 png(file.path(outdir, "mapa_anomalia_E_valle_v2.png"), width = 1400, height = 1000, res = 120)
-par(mar = c(2, 2, 4, 8))
+par(oma = c(0, 0, 3, 0), mar = c(2, 2, 1, 9))
 
-plot(valle, "cat_anom", col = colors,
-     main = paste0("Anomalia espacial PM2.5 — Modelo E v2 (GP, rho=0.08°, 14 est)\n",
-                   "Prediccion - Media global (", round(media_global, 1), " ug/m3)"))
+plot(valle, "cat_anom", col = colors)
+mtext("Anomalia espacial PM2.5 — Modelo E v2 (GP, rho=0.08°, 14 est)",
+      outer = TRUE, side = 3, line = 1.5, font = 2, cex = 1.05, col = "#2C3E50")
+mtext(paste0("Prediccion - Media global (", round(media_global, 1), " ug/m3)"),
+      outer = TRUE, side = 3, line = 0.4, font = 3, cex = 0.85, col = "gray30")
 
 points(est_obs$lon, est_obs$lat, pch = 21,
        bg = est_obs$col_punto, col = "black", cex = 2.5, lwd = 2)
 text(est_obs$lon, est_obs$lat, labels = est_obs$numero,
      pos = 3, cex = 1.0, col = "black", font = 2, offset = 0.6)
-legend("bottomleft", inset = c(0.02, 0.02),
+legend("right", inset = c(-0.04, 0),
+       legend = paste0(est_obs$numero, ". ", est_obs$estacion),
+       title = "Estaciones", bg = "white", cex = 0.75, xpd = TRUE, bty = "n")
+legend("bottomleft", inset = c(0.06, 0.02),
        legend = c("< -2", "-2 a -1", "-1 a -0.5", "-0.5 a 0",
                   "0 a 0.5", "0.5 a 1", "1 a 2", "> 2"),
        fill = colors,
        title = "Anomalia (ug/m3)", bg = "white", cex = 0.9)
-legend("right", inset = c(-0.02, 0),
-       legend = paste0(est_obs$numero, ". ", est_obs$estacion),
-       title = "Estaciones", bg = "white", cex = 0.75, xpd = TRUE, bty = "n")
 
 dev.off()
 cat("Mapa guardado:", file.path(outdir, "mapa_anomalia_E_valle_v2.png"), "\n")

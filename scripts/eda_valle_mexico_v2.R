@@ -1,6 +1,8 @@
 options(repos="http://cran.itam.mx/")
 library(dplyr)
 library(lubridate)
+library(ggplot2)
+library(tidyr)
 library(corrplot)
 
 wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ".."))
@@ -59,104 +61,216 @@ daily_mean <- df %>%
   group_by(date) %>%
   summarise(pm25 = mean(pm25), temp = mean(temp), hr = mean(hr), .groups="drop")
 
-png("output/figures/eda_valle_v2_series.png", width=1200, height=600)
-par(mfrow=c(1,3))
-plot(daily_mean$date, daily_mean$pm25, type="l", col="firebrick2",
-     main="PM2.5 promedio diario", ylab="µg/m³", xlab="")
-plot(daily_mean$date, daily_mean$temp, type="l", col="steelblue",
-     main="Temperatura promedio diaria", ylab="°C", xlab="")
-plot(daily_mean$date, daily_mean$hr, type="l", col="darkgreen",
-     main="HR promedio diaria", ylab="%", xlab="")
-dev.off()
+daily_long <- daily_mean %>%
+  tidyr::pivot_longer(cols = c(pm25, temp, hr),
+                      names_to  = "variable",
+                      values_to = "valor") %>%
+  mutate(variable = factor(variable,
+                           levels = c("pm25", "temp", "hr"),
+                           labels = c("PM2.5 (µg/m³)", "Temperatura (°C)", "Humedad relativa (%)")))
+p_series <- ggplot(daily_long, aes(x = date, y = valor, color = variable)) +
+  geom_line(linewidth = 0.7, lineend = "round") +
+  facet_wrap(~variable, scales = "free_y", ncol = 3) +
+  scale_color_manual(values = c("PM2.5 (µg/m³)" = "#E74C3C",
+                                "Temperatura (°C)" = "#3498DB",
+                                "Humedad relativa (%)" = "#2ECC71")) +
+  labs(title    = "Series temporales diarias — Valle de México 2023",
+       subtitle = "Promedio de las 14 estaciones de monitoreo",
+       x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(legend.position    = "none",
+        plot.title         = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle      = element_text(size = 9.5, face = "italic", color = "gray30"),
+        panel.grid.minor   = element_blank(),
+        strip.text         = element_text(face = "bold", size = 10))
+ggsave("output/figures/eda_valle_v2_series.png", plot = p_series,
+       width = 12, height = 4, dpi = 120)
 cat("\nGuardado: output/figures/eda_valle_v2_series.png\n")
 
 # Boxplot por estacion (ordenadas por PM2.5)
 est_ord <- resumen$estacion[order(resumen$pm25_mean)]
 df$estacion <- factor(df$estacion, levels=est_ord)
 
-png("output/figures/eda_valle_v2_boxplot_estacion.png", width=1600, height=900)
-par(mar=c(5, 12, 4, 2))
-boxplot(pm25 ~ estacion, data=df, horizontal=TRUE, las=1, cex.axis=0.95,
-        main="PM2.5 por estacion (ordenadas por media)", col="grey80",
-        xlab="PM2.5 (µg/m³)", cex.lab=1.3, cex.main=1.4)
-abline(v=mean(df$pm25), col="firebrick2", lwd=2, lty=2)
-legend("bottomright", legend=paste("Global:", round(mean(df$pm25),1)), 
-       col="firebrick2", lwd=2, lty=2, bg="white", cex=1.1)
-par(mar=c(5, 4, 4, 2))
-dev.off()
+media_global <- mean(df$pm25)
+p_box_est <- ggplot(df, aes(x = estacion, y = pm25, fill = ciudad)) +
+  geom_boxplot(color = "#2C3E50", alpha = 0.75, outlier.alpha = 0.3, outlier.size = 0.8) +
+  geom_hline(yintercept = media_global, color = "#E74C3C", linetype = "dashed", linewidth = 0.8) +
+  scale_fill_manual(values = c(cdmx = "#3498DB", edomex = "#E74C3C", hidalgo = "#2ECC71"),
+                    labels = c(cdmx = "CDMX", edomex = "Edo. Méx.", hidalgo = "Hidalgo")) +
+  annotate("text", x = 14.4, y = media_global + 0.5,
+           label = paste0("Global: ", round(media_global, 1), " µg/m³"),
+           color = "#E74C3C", size = 3, hjust = 1) +
+  coord_flip() +
+  labs(title    = "PM2.5 por estación — Valle de México 2023",
+       subtitle = "Estaciones ordenadas por PM2.5 promedio anual",
+       x = NULL,
+       y = expression(paste(PM[2.5], " (", mu, "g/", m^3, ")")),
+       fill = "Entidad") +
+  theme_minimal() +
+  theme(plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
+        panel.grid.minor = element_blank(),
+        legend.position  = "bottom",
+        legend.title     = element_text(face = "bold", size = 9))
+ggsave("output/figures/eda_valle_v2_boxplot_estacion.png", plot = p_box_est,
+       width = 10, height = 7, dpi = 120)
 cat("Guardado: output/figures/eda_valle_v2_boxplot_estacion.png\n")
 
 # Boxplot por mes
 meses_esp <- c("Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic")
 df$mes_nombre <- factor(meses_esp[df$mes], levels=meses_esp)
-png("output/figures/eda_valle_v2_boxplot_mes.png", width=900, height=500)
-boxplot(pm25 ~ mes_nombre, data=df, col="grey80",
-        main="PM2.5 por mes", xlab="", ylab="PM2.5 (µg/m³)")
-dev.off()
+p_box_mes <- ggplot(df, aes(x = mes_nombre, y = pm25)) +
+  geom_boxplot(fill = "#3498DB", color = "#2C3E50", alpha = 0.7,
+               outlier.alpha = 0.3, outlier.size = 0.8) +
+  labs(title    = "PM2.5 por mes — Valle de México 2023",
+       subtitle = "Distribución mensual agregada de las 14 estaciones",
+       x = NULL,
+       y = expression(paste(PM[2.5], " (", mu, "g/", m^3, ")"))) +
+  theme_minimal() +
+  theme(plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
+        panel.grid.minor = element_blank())
+ggsave("output/figures/eda_valle_v2_boxplot_mes.png", plot = p_box_mes,
+       width = 9, height = 5, dpi = 120)
 cat("Guardado: output/figures/eda_valle_v2_boxplot_mes.png\n")
 
 # Histogramas
-png("output/figures/eda_valle_v2_histogramas.png", width=1200, height=400)
-par(mfrow=c(1,4))
-hist(df$pm25, main="PM2.5", col="grey70", border="white", xlab="µg/m³")
-hist(log(df$pm25), main="log(PM2.5)", col="grey70", border="white", xlab="log")
-hist(df$temp, main="Temperatura", col="grey70", border="white", xlab="°C")
-hist(df$hr, main="Humedad relativa", col="grey70", border="white", xlab="%")
-dev.off()
+df_hist <- data.frame(
+  pm25     = df$pm25,
+  log_pm25 = log(df$pm25),
+  temp     = df$temp,
+  hr       = df$hr
+) %>%
+  tidyr::pivot_longer(everything(), names_to = "variable", values_to = "valor") %>%
+  mutate(variable = factor(variable,
+                           levels = c("pm25","log_pm25","temp","hr"),
+                           labels = c("PM2.5 (µg/m³)","log(PM2.5)","Temperatura (°C)","Humedad relativa (%)")))
+p_hist <- ggplot(df_hist, aes(x = valor)) +
+  geom_histogram(fill = "#3498DB", color = "white", bins = 30) +
+  facet_wrap(~variable, scales = "free", ncol = 4) +
+  labs(title    = "Distribución de variables — Valle de México 2023",
+       subtitle = "Histogramas con 30 intervalos",
+       x = NULL, y = "Frecuencia") +
+  theme_minimal() +
+  theme(plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
+        panel.grid.minor = element_blank(),
+        strip.text       = element_text(face = "bold", size = 9))
+ggsave("output/figures/eda_valle_v2_histogramas.png", plot = p_hist,
+       width = 12, height = 4, dpi = 120)
 cat("Guardado: output/figures/eda_valle_v2_histogramas.png\n")
 
-# Correlacion
-cor_mat <- cor(df[, c("temp", "hr", "sen_t", "cos_t", "pm25")], use="complete.obs")
-png("output/figures/eda_valle_v2_correlacion.png", width=600, height=600)
-corrplot(cor_mat, method="color", type="upper", addCoef.col="black",
-         tl.col="black", tl.srt=45, diag=FALSE,
-         title="Correlacion variables", mar=c(0,0,1,0))
-dev.off()
+# Correlacion — estilo Otho
+vars_cor <- c("temp", "hr", "sen_t", "cos_t", "pm25")
+labs_cor <- c("Temperatura", "Humedad rel.", "Sen estacional", "Cos estacional", "PM2.5")
+cor_mat  <- cor(df[, vars_cor], use = "complete.obs")
+rownames(cor_mat) <- colnames(cor_mat) <- labs_cor
+
+cor_long_eda <- as.data.frame(as.table(cor_mat), stringsAsFactors = FALSE)
+names(cor_long_eda) <- c("var1", "var2", "corr")
+cor_long_eda <- cor_long_eda[cor_long_eda$var1 != cor_long_eda$var2, ]
+cor_long_eda$var1      <- factor(cor_long_eda$var1, levels = rev(labs_cor))
+cor_long_eda$var2      <- factor(cor_long_eda$var2, levels = labs_cor)
+cor_long_eda$txt_color <- ifelse(abs(cor_long_eda$corr) >= 0.35, "white", "#2C3E50")
+
+p_cor <- ggplot(cor_long_eda, aes(x = var2, y = var1, fill = corr)) +
+  geom_tile(color = "white", linewidth = 1.2) +
+  geom_text(aes(label = sprintf("%.2f", corr), color = txt_color),
+            size = 4, fontface = "bold") +
+  scale_color_identity() +
+  scale_fill_gradient2(low = "#E74C3C", mid = "#F7F7F7", high = "#3498DB",
+                       midpoint = 0, limits = c(-1, 1), name = "Correlación\nde Pearson") +
+  coord_fixed() +
+  labs(title    = "Matriz de correlación — Valle de México 2023",
+       subtitle = "Correlación de Pearson entre PM2.5 y covariables climáticas",
+       x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(plot.title   = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle = element_text(size = 9.5, face = "italic", color = "gray30"),
+        panel.grid   = element_blank(),
+        axis.text.x  = element_text(face = "bold", size = 10, color = "#2C3E50",
+                                    angle = 30, hjust = 1),
+        axis.text.y  = element_text(face = "bold", size = 10, color = "#2C3E50"),
+        legend.title = element_text(face = "bold", size = 9),
+        legend.position = "right")
+ggsave("output/figures/eda_valle_v2_correlacion.png", plot = p_cor,
+       width = 6.5, height = 5.5, dpi = 120)
 cat("Guardado: output/figures/eda_valle_v2_correlacion.png\n")
 
-# Scatter con lowess
-png("output/figures/eda_valle_v2_scatter.png", width=1400, height=500)
-par(mfrow=c(1,3), mar=c(5, 5, 4, 2))
-plot(df$temp, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="Temperatura (°C)", ylab="PM2.5 (µg/m³)",
-     main="PM2.5 vs Temperatura", cex.lab=1.3, cex.axis=1.1, cex.main=1.3)
-lines(lowess(df$temp, df$pm25), col="firebrick2", lwd=2)
-plot(df$hr, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="Humedad relativa (%)", ylab="PM2.5 (µg/m³)",
-     main="PM2.5 vs Humedad", cex.lab=1.3, cex.axis=1.1, cex.main=1.3)
-lines(lowess(df$hr, df$pm25), col="firebrick2", lwd=2)
-plot(df$dia_año, df$pm25, pch=20, col=rgb(0,0,0,0.2), xlab="Día del año", ylab="PM2.5 (µg/m³)",
-     main="PM2.5 vs Tiempo", cex.lab=1.3, cex.axis=1.1, cex.main=1.3)
-lines(lowess(df$dia_año, df$pm25), col="firebrick2", lwd=2)
-dev.off()
+# Scatter con lowess — estilo Otho
+df_sc <- data.frame(temp = df$temp, hr = df$hr, dia = df$dia_año, pm25 = df$pm25) %>%
+  tidyr::pivot_longer(cols = c(temp, hr, dia), names_to = "cov", values_to = "x") %>%
+  mutate(cov = factor(cov,
+                      levels = c("temp","hr","dia"),
+                      labels = c("Temperatura (°C)","Humedad relativa (%)","Día del año")))
+p_scatter <- ggplot(df_sc, aes(x = x, y = pm25)) +
+  geom_point(color = "#7F8C8D", alpha = 0.20, size = 0.8) +
+  geom_smooth(method = "loess", color = "#E74C3C", fill = "#E74C3C",
+              alpha = 0.20, se = TRUE, linewidth = 1.0) +
+  facet_wrap(~cov, scales = "free_x", ncol = 3) +
+  labs(title    = expression(paste(PM[2.5], " vs covariables — Valle de México 2023")),
+       subtitle = "Puntos observados con curva LOESS",
+       x = NULL,
+       y = expression(paste(PM[2.5], " (", mu, "g/", m^3, ")"))) +
+  theme_minimal() +
+  theme(plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
+        panel.grid.minor = element_blank(),
+        strip.text       = element_text(face = "bold", size = 10))
+ggsave("output/figures/eda_valle_v2_scatter.png", plot = p_scatter,
+       width = 12, height = 4.5, dpi = 120)
 cat("Guardado: output/figures/eda_valle_v2_scatter.png\n")
 
-# Scatter log(PM2.5) vs covariables — motiva la transformacion log del modelo
-png("output/figures/eda_valle_v2_scatter_log.png", width=1400, height=500)
-par(mfrow=c(1,3), mar=c(5,5,4,2))
-plot(df$temp, log(df$pm25), pch=20, col=rgb(0,0,0,0.2),
-     xlab="Temperatura (°C)", ylab="log(PM2.5)", main="log(PM2.5) vs Temperatura")
-lines(lowess(df$temp, log(df$pm25)), col="firebrick2", lwd=2)
-plot(df$hr, log(df$pm25), pch=20, col=rgb(0,0,0,0.2),
-     xlab="Humedad relativa (%)", ylab="log(PM2.5)", main="log(PM2.5) vs Humedad")
-lines(lowess(df$hr, log(df$pm25)), col="firebrick2", lwd=2)
-plot(df$dia_año, log(df$pm25), pch=20, col=rgb(0,0,0,0.2),
-     xlab="Día del año", ylab="log(PM2.5)", main="log(PM2.5) vs Tiempo")
-lines(lowess(df$dia_año, log(df$pm25)), col="firebrick2", lwd=2)
-dev.off()
+# Scatter log(PM2.5) vs covariables — motiva la transformación log
+df_scl <- data.frame(temp = df$temp, hr = df$hr, dia = df$dia_año, logpm25 = log(df$pm25)) %>%
+  tidyr::pivot_longer(cols = c(temp, hr, dia), names_to = "cov", values_to = "x") %>%
+  mutate(cov = factor(cov,
+                      levels = c("temp","hr","dia"),
+                      labels = c("Temperatura (°C)","Humedad relativa (%)","Día del año")))
+p_scl <- ggplot(df_scl, aes(x = x, y = logpm25)) +
+  geom_point(color = "#7F8C8D", alpha = 0.20, size = 0.8) +
+  geom_smooth(method = "loess", color = "#E74C3C", fill = "#E74C3C",
+              alpha = 0.20, se = TRUE, linewidth = 1.0) +
+  facet_wrap(~cov, scales = "free_x", ncol = 3) +
+  labs(title    = "log(PM2.5) vs covariables — motiva transformación logarítmica",
+       subtitle = "La relación es más lineal en escala log — justifica el modelo Normal en log(PM2.5)",
+       x = NULL, y = "log(PM2.5)") +
+  theme_minimal() +
+  theme(plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
+        panel.grid.minor = element_blank(),
+        strip.text       = element_text(face = "bold", size = 10))
+ggsave("output/figures/eda_valle_v2_scatter_log.png", plot = p_scl,
+       width = 12, height = 4.5, dpi = 120)
 cat("Guardado: output/figures/eda_valle_v2_scatter_log.png\n")
 
 # Scatter coloreado por ciudad — heterogeneidad espacial antes del modelo
-col.ciudad <- c(cdmx="steelblue", edomex="firebrick2", hidalgo="darkgreen")
-col.vec <- col.ciudad[df$ciudad]
-png("output/figures/eda_valle_v2_scatter_ciudad.png", width=1400, height=500)
-par(mfrow=c(1,3), mar=c(5,5,4,2))
-plot(df$temp, df$pm25, pch=20, col=col.vec,
-     xlab="Temperatura (°C)", ylab="PM2.5 (µg/m³)", main="PM2.5 vs Temperatura por ciudad")
-legend("topright", legend=names(col.ciudad), col=col.ciudad, pch=20, bty="n")
-plot(df$hr, df$pm25, pch=20, col=col.vec,
-     xlab="Humedad (%)", ylab="PM2.5 (µg/m³)", main="PM2.5 vs Humedad por ciudad")
-plot(df$dia_año, df$pm25, pch=20, col=col.vec,
-     xlab="Día del año", ylab="PM2.5 (µg/m³)", main="PM2.5 vs Tiempo por ciudad")
-dev.off()
+df_scc <- data.frame(temp = df$temp, hr = df$hr, dia = df$dia_año,
+                     pm25 = df$pm25, ciudad = df$ciudad) %>%
+  tidyr::pivot_longer(cols = c(temp, hr, dia), names_to = "cov", values_to = "x") %>%
+  mutate(cov = factor(cov,
+                      levels = c("temp","hr","dia"),
+                      labels = c("Temperatura (°C)","Humedad relativa (%)","Día del año")),
+         ciudad = factor(ciudad, levels = c("cdmx","edomex","hidalgo"),
+                         labels = c("CDMX","Edo. Méx.","Hidalgo")))
+p_scc <- ggplot(df_scc, aes(x = x, y = pm25, color = ciudad)) +
+  geom_point(alpha = 0.25, size = 0.8) +
+  scale_color_manual(values = c("CDMX" = "#3498DB", "Edo. Méx." = "#E74C3C", "Hidalgo" = "#2ECC71")) +
+  facet_wrap(~cov, scales = "free_x", ncol = 3) +
+  labs(title    = expression(paste(PM[2.5], " vs covariables por entidad — heterogeneidad espacial")),
+       subtitle = "Cada punto es una observación diaria; colores por entidad federativa",
+       x = NULL,
+       y = expression(paste(PM[2.5], " (", mu, "g/", m^3, ")")),
+       color = "Entidad") +
+  theme_minimal() +
+  theme(plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
+        plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
+        panel.grid.minor = element_blank(),
+        strip.text       = element_text(face = "bold", size = 10),
+        legend.position  = "bottom",
+        legend.title     = element_text(face = "bold", size = 9))
+ggsave("output/figures/eda_valle_v2_scatter_ciudad.png", plot = p_scc,
+       width = 12, height = 4.5, dpi = 120)
 cat("Guardado: output/figures/eda_valle_v2_scatter_ciudad.png\n")
 
 # Guardar resumen

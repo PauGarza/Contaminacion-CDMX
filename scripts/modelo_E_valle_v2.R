@@ -6,6 +6,7 @@ options(repos="http://cran.itam.mx/")
 library(R2jags)
 library(terra)
 library(dplyr)
+library(ggplot2)
 
 prob <- function(x) {
   min(length(x[x>0])/length(x), length(x[x<0])/length(x))
@@ -96,14 +97,34 @@ print(out.sum.t.C1)
 out.alphaj <- out.sum.C1[grep("alphaj", rownames(out.sum.C1)), c(1,3,7)]
 out.alphaj <- out.alphaj[1:J, ]
 
-k <- J
-png(file.path(outdir, "efectos_espaciales_E_v2.png"), width = 800, height = 600)
-par(mfrow=c(1,1))
-plot(1:k, out.alphaj[,1], xlab="Estacion", ylab="", ylim=c(min(out.alphaj), max(out.alphaj)),
-     main="Modelo E: Efectos espaciales (alphaj) — base C1")
-segments(1:k, out.alphaj[,2], 1:k, out.alphaj[,3])
-abline(h=0, col="grey70")
-dev.off()
+estaciones_ord <- sort(unique(df$estacion))
+df_ef <- data.frame(
+  estacion = factor(estaciones_ord, levels = estaciones_ord[order(out.alphaj[, 1])]),
+  media    = out.alphaj[, 1],
+  q025     = out.alphaj[, 2],
+  q975     = out.alphaj[, 3]
+)
+p_ef <- ggplot(df_ef, aes(x = estacion, y = media)) +
+  geom_hline(yintercept = 0, color = "#7F8C8D", linetype = "dashed", linewidth = 0.7) +
+  geom_errorbar(aes(ymin = q025, ymax = q975),
+                width = 0.3, color = "#9B59B6", linewidth = 0.7) +
+  geom_point(color = "#2C3E50", size = 2.5) +
+  coord_flip() +
+  labs(
+    title    = "Modelo E: Efectos espaciales (alphaj) — base C1",
+    subtitle = "Media posterior e IC 95% — cada punto es una estación de monitoreo",
+    x        = NULL,
+    y        = expression(paste("Efecto espacial aditivo en log(", PM[2.5], ")"))
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
+    plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
+    panel.grid.minor = element_blank(),
+    axis.text.y      = element_text(size = 9, color = "#2C3E50")
+  )
+ggsave(file.path(outdir, "efectos_espaciales_E_v2.png"),
+       plot = p_ef, width = 7.5, height = 5.5, dpi = 120)
 
 R2.C1 <- cor(logy, apply(resC1$sims.list$yf1, 2, mean))^2
 cat("C1 base: DIC =", resC1$DIC, "| Pseudo-R2 =", round(R2.C1, 4), "\n")
@@ -211,17 +232,18 @@ est_unique <- est_unique[order(est_unique$estacion), ]
 est_unique$num <- 1:nrow(est_unique)
 
 png(file.path(outdir, "mapa_prediccion_E_valle_v2.png"), width = 1400, height = 1000, res = 120)
-par(mar = c(2, 2, 4, 8))
-plot(valle, "cat", col = colors,
-     main = "PM2.5 predicho — Modelo E v2 (GP espacial, 14 estaciones)")
+par(oma = c(0, 0, 2, 0), mar = c(2, 2, 1, 9))
+plot(valle, "cat", col = colors)
+mtext("PM2.5 predicho — Modelo E v2 (GP espacial, 14 estaciones)",
+      outer = TRUE, side = 3, line = 0.5, font = 2, cex = 1.05, col = "#2C3E50")
 points(est_unique$lon, est_unique$lat, pch = 21, bg = "white", col = "black", cex = 2, lwd = 2)
 text(est_unique$lon, est_unique$lat, labels = est_unique$num,
      pos = 3, cex = 0.9, col = "black", font = 2, offset = 0.5)
-legend("bottomleft", legend = levels(valle$cat), fill = colors,
-       title = "PM2.5 (µg/m³)", bg = "white", cex = 0.85)
-legend("right", inset = c(-0.02, 0),
+legend("right", inset = c(-0.04, 0),
        legend = paste0(est_unique$num, ". ", est_unique$estacion),
        title = "Estaciones", bg = "white", cex = 0.7, xpd = TRUE, bty = "n")
+legend("bottomleft", inset = c(0.06, 0.02), legend = levels(valle$cat), fill = colors,
+       title = "PM2.5 (µg/m³)", bg = "white", cex = 0.85)
 dev.off()
 cat("Mapa de prediccion guardado\n")
 

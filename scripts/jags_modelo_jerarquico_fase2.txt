@@ -1,0 +1,34 @@
+model {
+  # === 1. BUCLE ESPACIO-TEMPORAL (VEROSIMILITUD) ===
+  for(t in 1:N_dias) {
+    for(j in 1:N_estaciones) {
+      # mu_cdmx[t] lleva el intercepto global limpio gamma[1]
+      y[t, j] ~ dnorm(mu_cdmx[t] + alpha_corregido[j], prec_heredada[t, j])
+    }
+
+    # Tendencia macro-ambiental de la cuenca (Fourier de un armónico)
+    mu_cdmx[t] <- gamma[1] + gamma[2]*sen_t[t] + gamma[3]*cos_t[t]
+  }
+
+  # === 2. PRIORIS ESTRUCTURALES NO-INFORMATIVAS ===
+  for(k in 1:3) {
+    gamma[k] ~ dnorm(0, 0.001)
+  }
+
+  for(j in 1:N_estaciones) {
+    alpha[j] ~ dnorm(0, tau_estacion)
+
+    # RESTRICCIÓN CRÍTICA: Restamos la media para forzar a que sumen cero
+    alpha_corregido[j] <- alpha[j] - media_alpha
+  }
+
+  # Cálculo de la media del vector alpha
+  media_alpha <- mean(alpha[1:N_estaciones])
+
+  # Prioris sobre los componentes de varianza
+  tau_estacion ~ dgamma(0.1, 0.1)
+  tau_ciudad ~ dgamma(0.1, 0.1)
+
+  # Parámetro de escala para el reporte
+  sigma_ciudad <- 1 / sqrt(tau_ciudad)
+}

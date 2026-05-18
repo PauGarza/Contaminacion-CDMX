@@ -1,0 +1,26 @@
+model {
+  # 1. VEROSIMILITUD E IMPUTACIÓN DE LA VARIABLE RESPUESTA LATENTE
+  for (t in 1:N_dias) {
+    for (j in 1:N_estaciones) {
+      log_pm25[t, j] ~ dnorm(mu[t, j], tau_y)
+      mu[t, j] <- alphaj[j] + beta[1]*sen_t[t] + beta[2]*cos_t[t] + beta[3]*temp[t, j] + beta[4]*hr[t, j]
+    }
+  }
+
+  # 2. EL GRADIENTE ESPACIAL DE TOBLER (Normal Multivariada Por Distancia)
+  alphaj[1:N_estaciones] ~ dmnorm(mu_alpha[1:N_estaciones], T_espacial[1:N_estaciones, 1:N_estaciones])
+  for(j in 1:N_estaciones) { mu_alpha[j] <- 0 }
+
+  for(k in 1:N_estaciones) {
+    for(l in 1:N_estaciones) {
+      Sigma_espacial[k, l] <- (1 / tau_alpha) * exp(-phi * D[k, l])
+    }
+  }
+  T_espacial[1:N_estaciones, 1:N_estaciones] <- inverse(Sigma_espacial[1:N_estaciones, 1:N_estaciones])
+
+  # 3. DISTRIBUCIONES PRIORIS ESTRUCTURALES NO INFORMATIVAS
+  for(k in 1:4) { beta[k] ~ dnorm(0, 0.001) }
+  tau_y     ~ dgamma(0.1, 0.1)
+  tau_alpha ~ dgamma(0.1, 0.1)
+  phi       ~ dunif(0.01, 5)
+}
