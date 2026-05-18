@@ -2,7 +2,7 @@ options(repos="http://cran.itam.mx/")
 library(terra)
 library(dplyr)
 
-wdir <- "C:/Users/pauli/Documents/RegresionAvanzada/Contaminacion-CDMX/"
+wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ".."))
 setwd(wdir)
 
 # ============================================================

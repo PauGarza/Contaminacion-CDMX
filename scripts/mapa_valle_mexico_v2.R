@@ -4,7 +4,7 @@ library(dplyr)
 library(terra)
 library(RColorBrewer)
 
-wdir <- "C:/Users/pauli/Documents/RegresionAvanzada/Contaminacion-CDMX/"
+wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ".."))
 setwd(wdir)
 
 imgdir <- file.path(wdir, "output/figures/")

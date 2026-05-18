@@ -38,7 +38,7 @@ diagnostico_cadena <- function(sim.obj, param.name, outdir, model.name) {
   cat("  Diagnostico guardado:", param.name, "\n")
 }
 
-wdir <- "C:/Users/pauli/Documents/RegresionAvanzada/Contaminacion-CDMX/"
+wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ".."))
 setwd(wdir)
 outdir <- "output/figures"
 

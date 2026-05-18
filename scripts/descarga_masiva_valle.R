@@ -3,7 +3,7 @@ library(rsinaica)
 library(dplyr)
 library(lubridate)
 
-wdir <- "C:/Users/pauli/Documents/RegresionAvanzada/Contaminacion-CDMX/"
+wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ".."))
 setwd(wdir)
 
 dir.create("data/raw", recursive=TRUE, showWarnings=FALSE)

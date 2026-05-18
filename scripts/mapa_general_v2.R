@@ -4,7 +4,7 @@
 library(terra)
 library(dplyr)
 
-wdir <- "C:/Users/pauli/Documents/RegresionAvanzada/Contaminacion-CDMX/"
+wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ".."))
 setwd(wdir)
 outdir <- "output/figures"
 

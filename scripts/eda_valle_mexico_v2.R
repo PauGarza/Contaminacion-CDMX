@@ -3,7 +3,7 @@ library(dplyr)
 library(lubridate)
 library(corrplot)
 
-wdir <- "C:/Users/pauli/Documents/RegresionAvanzada/Contaminacion-CDMX/"
+wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ".."))
 setwd(wdir)
 
 # ============================================================
