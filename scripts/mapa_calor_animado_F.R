@@ -8,6 +8,7 @@
 library(dplyr)
 library(sf)
 library(ggplot2)
+library(scales)
 library(gganimate)
 library(gifski)
 
@@ -78,10 +79,13 @@ df_semanal_est <- df_diario %>%
   group_by(semana, estacion, lat, lon) %>%
   summarise(pm25_semana = mean(pm25, na.rm = TRUE), .groups = "drop")
 
-# Rango global para escala consistente en todo el GIF
-pm25_min <- floor(min(df_semanal_est$pm25_semana, na.rm = TRUE))
-pm25_max <- ceiling(max(df_semanal_est$pm25_semana, na.rm = TRUE))
-cat(sprintf("Rango PM2.5 semanal: %.1f — %.1f ug/m3\n", pm25_min, pm25_max))
+# Escala estirada sobre el rango P5-P95 para maximizar contraste de color.
+# Valores fuera de ese rango quedan recortados al extremo de la paleta (squish).
+pm25_min <- quantile(df_semanal_est$pm25_semana, 0.05, na.rm = TRUE)
+pm25_max <- quantile(df_semanal_est$pm25_semana, 0.95, na.rm = TRUE)
+cat(sprintf("Rango PM2.5 semanal (abs): %.1f — %.1f ug/m3\n",
+            min(df_semanal_est$pm25_semana), max(df_semanal_est$pm25_semana)))
+cat(sprintf("Limites de color (P5-P95): %.1f — %.1f ug/m3\n", pm25_min, pm25_max))
 
 # ============================================================
 # 5. Cargar shapefile y filtrar Valle de Mexico
@@ -145,6 +149,7 @@ p_anim <- ggplot() +
   scale_fill_gradientn(
     colors = c("#FFFFB2", "#FED976", "#FEB24C", "#FD8D3C", "#FC4E2A", "#E31A1C"),
     limits = c(pm25_min, pm25_max),
+    oob    = squish,
     name   = expression(PM[2.5]~"(µg/m³)"),
     guide  = guide_colorbar(
       barwidth  = 0.8,
