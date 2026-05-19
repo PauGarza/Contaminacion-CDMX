@@ -72,8 +72,8 @@ de PM2.5 en el Valle de M\'exico, y podemos usarla para predecir la
 contaminaci\'on en zonas sin sensores?}
 \end{quote}
 
-Para responderla se comparan cinco modelos bayesianos de complejidad
-creciente, ajustados con JAGS a trav\'es del paquete \texttt{R2jags}:
+Para responderla se ajustan seis modelos bayesianos de complejidad
+creciente en JAGS a trav\'es del paquete \texttt{R2jags}:
 
 \begin{enumerate}
   \item \textbf{Modelo A --- Normal global}: ¿cu\'anto de la variaci\'on de PM2.5
@@ -90,10 +90,19 @@ creciente, ajustados con JAGS a trav\'es del paquete \texttt{R2jags}:
         no lineal?
 \end{enumerate}
 
-Finalmente, el \textbf{Modelo E} usa los efectos espaciales del Modelo~C1
+El \textbf{Modelo E} usa los efectos espaciales del Modelo~C1
 para hacer kriging bayesiano y predecir PM2.5 en los 141~pol\'igonos del
 Valle de M\'exico, incluyendo los 44~municipios de Edomex sin estaciones
 de monitoreo.
+
+Finalmente, el \textbf{Modelo F --- Espacio-Temporal Jer\'arquico} integra
+ambas dimensiones en un marco unificado: ajusta un panel balanceado
+$365 \times 14$ donde los valores faltantes se imputan directamente
+como variables latentes dentro del muestreador MCMC, la estructura
+espacial entre estaciones se modela mediante una Normal Multivariada
+con kernel exponencial, y una segunda etapa de agregaci\'on jer\'arquica
+estima la tendencia macro-ambiental diaria de la ZMVM con propagaci\'on
+expl\'icita de la incertidumbre de la primera etapa.
 
 
 %==============================================================
@@ -789,9 +798,184 @@ La estructura espacial requiere un modelo no lineal, como el proceso
 gaussiano del Modelo~E.
 
 
+\subsection{Modelo~E --- Proceso Gaussiano y Kriging Bayesiano}
+
+\subsubsection*{Proceso gaussiano como modelo espacial}
+
+Los datos de PM2.5 son observaciones \emph{referenciadas puntualmente}:
+cada medici\'on $Y(s_j)$ corresponde a una localizaci\'on espec\'ifica
+$s_j = (\text{lon}_j, \text{lat}_j)$.
+Cuando las observaciones presentan dependencia espacial, el marco adecuado
+es el \emph{proceso gaussiano} (PG): una colecci\'on de variables aleatorias
+tal que cualquier subconjunto finito tiene distribuci\'on normal multivariada.
+Un PG se caracteriza por su funci\'on de media $\mu(s)$ y su funci\'on de
+covarianza $\Sigma(s, t)$ (Nieto Barajas, 2026):
+\[
+  Y(s) \sim \mathcal{N}\!\bigl(\mu(s),\,\Sigma(s,t)\bigr).
+\]
+
+Bajo el supuesto de \emph{estacionariedad de segundo orden} ---
+$\mu(s) = \mu$ constante y $\text{Cov}(Y(s), Y(s+h)) = C(h)$ solo depende
+del desplazamiento $h$ --- e \emph{isotrop\'ia} --- $C(h)$ depende solo de
+la distancia $\|h\|$ --- la funci\'on de covarianza exponencial es:
+\[
+  \Sigma(s_i, s_j) = \sigma^2\, e^{-\phi\, d_{ij}},
+\]
+donde $d_{ij} = \|s_i - s_j\|$ es la distancia euclidiana entre
+localizaciones y $\phi > 0$ es el par\'ametro de rango inverso.
+
+\subsubsection*{Especificaci\'on del Modelo~E}
+
+El modelo de regresi\'on espacial adoptado tiene la forma aditiva
+(Nieto Barajas, 2026, \S7.2):
+\[
+  Y(s) = \mu(s) + \omega(s),
+\]
+donde $\mu(s) = \mathbf{x}(s)'\boldsymbol{\beta}$ es el predictor lineal
+fijo y $\omega(s)$ es un efecto aleatorio espacial con distribuci\'on
+gaussiana.
+
+En lugar de ajustar el PG completo en JAGS --- lo que requerir\'ia
+muestrear la matriz de covarianzas $n \times n$ en cada iteraci\'on ---
+se adopta una aproximaci\'on en dos etapas que es computacionalmente
+eficiente y aprovecha los resultados del Modelo~C1:
+
+\begin{enumerate}
+  \item Los efectos aleatorios $\hat\alpha_j$ del Modelo~C1 se interpretan
+        como realizaciones del proceso gaussiano en las 14~localizaciones
+        con estaciones: $\hat\alpha_j \approx \omega(s_j)$.
+  \item Se modela $\boldsymbol{\omega} = (\omega(s_1),\ldots,\omega(s_J))'$
+        como un PG estacionario e isotr\'opico con kernel exponencial:
+        \[
+          \boldsymbol{\omega} \sim \mathcal{N}_J(\mathbf{0},\,\Sigma_{\text{obs}}), \qquad
+          [\Sigma_{\text{obs}}]_{ij} = e^{-d_{ij}/\rho},
+        \]
+        con rango $\rho = 0.08^\circ \approx 8.9$~km.
+        A esa distancia la correlaci\'on cae a $e^{-1} \approx 0.37$;
+        para estaciones a $d > 3\rho \approx 27$~km la correlaci\'on
+        es pr\'acticamente nula ($< 0.05$).
+\end{enumerate}
+
+\subsubsection*{Kriging bayesiano}
+
+La predicci\'on en un pol\'igono sin estaci\'on con centroide $s_0$ se
+obtiene mediante la distribuci\'on predictiva bayesiana (Nieto Barajas,
+2026, \S7.2):
+\[
+  f\!\bigl(y_0 \,\big|\, \mathbf{y},\, \mathbf{x}_0\bigr)
+  = \int f\!\bigl(y_0 \,\big|\, \mathbf{y},\, \theta,\, \mathbf{x}_0\bigr)\,
+          f(\theta \,|\, \mathbf{y})\, d\theta,
+\]
+integrada sobre la incertidumbre param\'etrica $\theta = (\alpha, \boldsymbol{\beta}, \tau)$.
+El predictor del efecto espacial en $s_0$, condicional en los efectos
+observados, es:
+\[
+  \hat\omega(s_0) = \boldsymbol{\Sigma}_{\text{pred,obs}}\,
+                   \boldsymbol{\Sigma}_{\text{obs,obs}}^{-1}\,
+                   \hat{\boldsymbol{\alpha}},
+\]
+donde $[\boldsymbol{\Sigma}_{\text{pred,obs}}]_j = e^{-d_{0j}/\rho}$
+es el vector de covarianzas entre el punto nuevo y las~14 estaciones.
+La predicci\'on final combina la componente fija (covariables en sus
+valores medios anuales) con la componente espacial:
+\[
+  \hat y_0 = \hat\alpha + \hat{\boldsymbol\beta}'\bar{\mathbf{x}} + \hat\omega(s_0).
+\]
+Se usan 2{,}000 muestras MCMC de la distribuci\'on final del Modelo~C1
+para propagar la incertidumbre param\'etrica y obtener intervalos de
+credibilidad para cada pol\'igono.
+
+
+\subsection{Modelo F --- Espacio-Temporal Jer\'arquico}
+
+El Modelo~F aborda las dos limitaciones principales del Modelo~E:
+(i) los datos faltantes se tratan como par\'ametros a estimar, no se
+descartan, y (ii) la estructura espacio-temporal se ajusta de forma
+conjunta en lugar de proceder en dos pasos.
+El modelo se ajusta en dos etapas secuenciales.
+
+\subsubsection*{Etapa~1 --- Modelo espacio-temporal con proceso gaussiano}
+
+Se construye un panel balanceado $365 \times 14$ donde las celdas
+sin observaci\'on quedan como \texttt{NA} en la variable respuesta.
+JAGS trata esas celdas como variables latentes y las imputa
+simult\'aneamente con el resto del muestreo.
+
+La verosimilitud del panel es:
+\[
+  \log(\text{PM}_{2.5})_{t,j} \sim \mathcal{N}\!\bigl(\mu_{t,j},\,\tau_y^{-1}\bigr),
+\]
+\[
+  \mu_{t,j} = \alpha_j + \beta_1\,\text{sen}_t + \beta_2\,\text{cos}_t
+              + \beta_3\,\text{temp}_{t,j} + \beta_4\,\text{hr}_{t,j}.
+\]
+
+Los efectos espaciales de estaci\'on $\boldsymbol\alpha = (\alpha_1,\ldots,\alpha_J)'$
+se modelan mediante una Normal Multivariada con estructura de covarianza
+exponencial en funci\'on de la distancia euclidiana en km (proyecci\'on UTM~14N):
+\[
+  \boldsymbol\alpha \sim \mathcal{N}_J\!\bigl(\mathbf{0},\,
+  \boldsymbol\Sigma_\alpha\bigr), \qquad
+  [\boldsymbol\Sigma_\alpha]_{kl} = \frac{1}{\tau_\alpha}\,e^{-\phi\, D_{kl}},
+\]
+donde $D_{kl}$ es la distancia en km entre las estaciones $k$ y $l$,
+y $\phi > 0$ es el par\'ametro de rango estimado desde los datos
+(a diferencia del Modelo~E, donde $\rho$ se fij\'o en 0.08\textdegree).
+
+Las distribuciones iniciales son:
+\[
+  \beta_k \sim \mathcal{N}(0,\,0.001), \quad
+  \tau_y \sim \text{Ga}(0.1,\,0.1), \quad
+  \tau_\alpha \sim \text{Ga}(0.1,\,0.1), \quad
+  \phi \sim \text{Uniforme}(0.01,\,5).
+\]
+
+La cadena se corri\'o con \texttt{jags.parallel}: 2~cadenas,
+10{,}000~iteraciones, 3{,}000 de calentamiento, adelgazamiento $\text{thin}=4$.
+La salida principal es el array tridimensional de simulaciones de
+$\log(\text{PM}_{2.5})_{t,j}$, incluyendo los valores imputados.
+
+\subsubsection*{Etapa~2 --- Agregaci\'on jer\'arquica a nivel ZMVM}
+
+Las medias posteriores $\hat{y}_{t,j}$ y varianzas posteriores
+$\hat{v}_{t,j}$ de $\log(\text{PM}_{2.5})_{t,j}$ de la Etapa~1
+sirven como datos para un segundo modelo jer\'arquico que estima la
+tendencia macro-ambiental diaria de la cuenca:
+\[
+  \hat{y}_{t,j} \sim \mathcal{N}\!\bigl(\mu^\text{ZMVM}_t + \alpha^\ast_j,\;
+  \hat\tau_{t,j}\bigr), \qquad
+  \hat\tau_{t,j} = \min\!\left(\frac{1}{\hat{v}_{t,j}},\; 500\right),
+\]
+donde la precisi\'on heredada $\hat\tau_{t,j}$ pondera cada estaci\'on
+en funci\'on de la informaci\'on que aport\'o en la Etapa~1 (estaciones
+con mayor incertidumbre reciben menor peso).
+La tendencia macro-ambiental sigue un modelo arm\'onico:
+\[
+  \mu^\text{ZMVM}_t = \gamma_1 + \gamma_2\,\text{sen}_t + \gamma_3\,\text{cos}_t.
+\]
+
+Los efectos espaciales de estaci\'on $\alpha^\ast_j$ se modelan con una
+restricci\'on de suma cero para identificabilidad:
+\[
+  \alpha_j \sim \mathcal{N}(0,\,\tau_\text{est}^{-1}), \qquad
+  \alpha^\ast_j = \alpha_j - \bar\alpha,
+\]
+con distribuciones iniciales $\gamma_k \sim \mathcal{N}(0,\,0.001)$
+y $\tau_\text{est} \sim \text{Ga}(0.1,\,0.1)$.
+
+La cadena se corri\'o con \texttt{jags.parallel}: 3~cadenas,
+25{,}000~iteraciones, 5{,}000 de calentamiento, adelgazamiento $\text{thin}=50$.
+El adelgazamiento agresivo es necesario porque el modelo M-H sobre
+par\'ametros continuos genera autocorrelaci\'on serial alta.
+Los par\'ametros de inter\'es son $\boldsymbol\gamma$,
+$\boldsymbol\alpha^\ast$ y $\mu^\text{ZMVM}_t$ ($t = 1,\ldots,365$).
+
+
 %==============================================================
-\section{Comparaci\'on de modelos}
+\section{Interpretaci\'on de resultados}
 %==============================================================
+
+\subsection{Comparaci\'on de modelos}
 
 \begin{table}[H]
 \centering
@@ -839,96 +1023,7 @@ La jerarqu\'ia de modelos es clara:
 Se elige el \textbf{Modelo~C1} como el modelo preferido.
 
 
-%==============================================================
-\section{Predicci\'on espacial --- Modelo E}
-%==============================================================
-
-\subsection*{Proceso gaussiano como modelo espacial}
-
-Los datos de PM2.5 son observaciones \emph{referenciadas puntualmente}:
-cada medici\'on $Y(s_j)$ corresponde a una localizaci\'on espec\'ifica
-$s_j = (\text{lon}_j, \text{lat}_j)$.
-Cuando las observaciones presentan dependencia espacial, el marco adecuado
-es el \emph{proceso gaussiano} (PG): una colecci\'on de variables aleatorias
-tal que cualquier subconjunto finito tiene distribuci\'on normal multivariada.
-Un PG se caracteriza por su funci\'on de media $\mu(s)$ y su funci\'on de
-covarianza $\Sigma(s, t)$ (Nieto Barajas, 2026):
-\[
-  Y(s) \sim \mathcal{N}\!\bigl(\mu(s),\,\Sigma(s,t)\bigr).
-\]
-
-Bajo el supuesto de \emph{estacionariedad de segundo orden} ---
-$\mu(s) = \mu$ constante y $\text{Cov}(Y(s), Y(s+h)) = C(h)$ solo depende
-del desplazamiento $h$ --- e \emph{isotrop\'ia} --- $C(h)$ depende solo de
-la distancia $\|h\|$ --- la funci\'on de covarianza exponencial es:
-\[
-  \Sigma(s_i, s_j) = \sigma^2\, e^{-\phi\, d_{ij}},
-\]
-donde $d_{ij} = \|s_i - s_j\|$ es la distancia euclidiana entre
-localizaciones y $\phi > 0$ es el par\'ametro de rango inverso.
-
-\subsection*{Especificaci\'on del Modelo E}
-
-El modelo de regresi\'on espacial adoptado tiene la forma aditiva
-(Nieto Barajas, 2026, \S7.2):
-\[
-  Y(s) = \mu(s) + \omega(s),
-\]
-donde $\mu(s) = \mathbf{x}(s)'\boldsymbol{\beta}$ es el predictor lineal
-fijo y $\omega(s)$ es un efecto aleatorio espacial con distribuci\'on
-gaussiana.
-
-En lugar de ajustar el PG completo en JAGS --- lo que requerir\'ia
-muestrear la matriz de covarianzas $n \times n$ en cada iteraci\'on ---
-se adopta una aproximaci\'on en dos etapas que es computacionalmente
-eficiente y aprovecha los resultados del Modelo~C1:
-
-\begin{enumerate}
-  \item Los efectos aleatorios $\hat\alpha_j$ del Modelo~C1 se interpretan
-        como realizaciones del proceso gaussiano en las 14~localizaciones
-        con estaciones: $\hat\alpha_j \approx \omega(s_j)$.
-  \item Se modela $\boldsymbol{\omega} = (\omega(s_1),\ldots,\omega(s_J))'$
-        como un PG estacionario e isotr\'opico con kernel exponencial:
-        \[
-          \boldsymbol{\omega} \sim \mathcal{N}_J(\mathbf{0},\,\Sigma_{\text{obs}}), \qquad
-          [\Sigma_{\text{obs}}]_{ij} = e^{-d_{ij}/\rho},
-        \]
-        con rango $\rho = 0.08^\circ \approx 8.9$~km.
-        A esa distancia la correlaci\'on cae a $e^{-1} \approx 0.37$;
-        para estaciones a $d > 3\rho \approx 27$~km la correlaci\'on
-        es pr\'acticamente nula ($< 0.05$).
-\end{enumerate}
-
-\subsection*{Kriging bayesiano}
-
-La predicci\'on en un pol\'igono sin estaci\'on con centroide $s_0$ se
-obtiene mediante la distribuci\'on predictiva bayesiana (Nieto Barajas,
-2026, \S7.2):
-\[
-  f\!\bigl(y_0 \,\big|\, \mathbf{y},\, \mathbf{x}_0\bigr)
-  = \int f\!\bigl(y_0 \,\big|\, \mathbf{y},\, \theta,\, \mathbf{x}_0\bigr)\,
-          f(\theta \,|\, \mathbf{y})\, d\theta,
-\]
-integrada sobre la incertidumbre param\'etrica $\theta = (\alpha, \boldsymbol{\beta}, \tau)$.
-El predictor del efecto espacial en $s_0$, condicional en los efectos
-observados, es:
-\[
-  \hat\omega(s_0) = \boldsymbol{\Sigma}_{\text{pred,obs}}\,
-                   \boldsymbol{\Sigma}_{\text{obs,obs}}^{-1}\,
-                   \hat{\boldsymbol{\alpha}},
-\]
-donde $[\boldsymbol{\Sigma}_{\text{pred,obs}}]_j = e^{-d_{0j}/\rho}$
-es el vector de covarianzas entre el punto nuevo y las~14 estaciones.
-La predicci\'on final combina la componente fija (covariables en sus
-valores medios anuales) con la componente espacial:
-\[
-  \hat y_0 = \hat\alpha + \hat{\boldsymbol\beta}'\bar{\mathbf{x}} + \hat\omega(s_0).
-\]
-Se usan 2{,}000 muestras MCMC de la distribuci\'on final del Modelo~C1
-para propagar la incertidumbre param\'etrica y obtener intervalos de
-credibilidad para cada pol\'igono.
-
-\subsection*{Resultados}
+\subsection{Predicci\'on espacial --- Resultados del Modelo~E}
 
 \begin{figure}[H]
   \centering
@@ -992,9 +1087,39 @@ Un habitante de Tl\'ahuac est\'a expuesto, en promedio, a 19\% m\'as
 PM2.5 que uno de Zumpango.
 
 
-%==============================================================
-\section{Interpretaci\'on de resultados}
-%==============================================================
+\subsection{Predicci\'on temporal --- Cuarto trimestre de 2023}
+
+El Modelo~C1 se us\'o tambi\'en para generar predicciones del promedio
+mensual de PM2.5 sobre las 14~estaciones durante el cuarto trimestre de
+2023, evaluando el predictor en las covariables medias de cada mes.
+La distribuci\'on predictiva posterior muestra un patr\'on claramente
+ascendente (Tabla~\ref{tab:q4}), consistente con el m\'aximo invernal
+capturado por los t\'erminos de Fourier.
+
+\begin{table}[H]
+\centering
+\caption{Predicci\'on de PM2.5 promedio mensual (14~estaciones)
+         para el cuarto trimestre de 2023.
+         IC: intervalo de credibilidad al 95\,\%.}
+\label{tab:q4}
+\begin{tabular}{lrrr}
+\toprule
+Mes & Media ($\mu$g/m$^3$) & IC 2.5\,\% & IC 97.5\,\% \\
+\midrule
+Octubre  & 13.41 & 12.42 & 14.45 \\
+Noviembre & 16.11 & 14.82 & 17.46 \\
+Diciembre & 17.29 & 16.08 & 18.57 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Diciembre de 2023 (17.3~$\mu$g/m$^3$) supera la gu\'ia anual de la OMS
+(15~$\mu$g/m$^3$), reflejando el deterioro de la calidad del aire en
+temporada de bajas temperaturas y alta inversi\'on t\'ermica.
+Los intervalos de credibilidad se ampl\'ian de octubre a diciembre
+(de 2.0 a 2.5~$\mu$g/m$^3$), lo que refleja la mayor variabilidad
+interdiaria propia del invierno.
+
 
 \paragraph{¿Qu\'e factores explican la variaci\'on temporal de PM2.5?}
 Los t\'erminos de Fourier (estacionalidad anual) son los predictores
@@ -1040,6 +1165,93 @@ Los intervalos de credibilidad en municipios sin estaciones cercanas son
 30--50\% m\'as amplios que en los municipios con cobertura directa,
 reflejando correctamente la mayor incertidumbre de la interpolaci\'on
 en zonas alejadas de sensores.
+
+
+\subsection{Resultados del Modelo~F}
+
+\paragraph{Diagn\'ostico de convergencia.}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_F1_beta1_v2.png}
+  \caption{Diagn\'osticos MCMC del Modelo~F Etapa~1 para $\beta_1$
+           (coeficiente del t\'ermino $\text{sen}_t$).
+           Las dos cadenas mezclan correctamente y la ACF decae
+           dentro de los primeros lags.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_F2_gamma1_v2.png}
+  \caption{Diagn\'osticos MCMC del Modelo~F Etapa~2 para $\gamma_1$
+           (intercepto global de la ZMVM).
+           Se usaron 3~cadenas con adelgazamiento $\text{thin}=50$;
+           las tres trayectorias convergen a la misma regi\'on.}
+\end{figure}
+
+\paragraph{Imputaci\'on de datos faltantes.}
+La Etapa~1 imputa de forma coherente los valores no observados de cada
+estaci\'on.
+El modelo asigna mayor incertidumbre en las fechas sin observaci\'on,
+lo que se refleja en intervalos de credibilidad m\'as amplios en esas
+celdas.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{output/figures/validacion_F1_imputacion_v2.png}
+  \caption{Validaci\'on de la imputaci\'on MCMC (Etapa~1) para tres
+           estaciones con distinta densidad de datos: Hospital General
+           de M\'exico (52~obs, escenario cr\'itico), Santiago
+           Acahualtepec (189~obs, escenario t\'ipico) y Benito Ju\'arez
+           (236~obs, escenario \'optimo).
+           La banda gris es el intervalo de credibilidad al~95\%;
+           los puntos grises son los valores observados.}
+\end{figure}
+
+\paragraph{Tendencia macro-ambiental de la ZMVM.}
+La Etapa~2 produce la serie de tiempo $\mu^\text{ZMVM}_t$ que resume
+la tendencia diaria de la calidad del aire en la cuenca, libre del
+ruido local de cada estaci\'on.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{output/figures/serie_mu_cdmx_v2.png}
+  \caption{Serie de tiempo macro-ambiental de la ZMVM estimada por el
+           Modelo~F Etapa~2.
+           La l\'inea s\'olida es la media posterior de $\exp(\mu^\text{ZMVM}_t)$
+           en escala $\mu$g/m$^3$; la banda roja es el intervalo de
+           credibilidad al~95\%.
+           El patr\'on estacional es claro: m\'aximo invernal
+           (enero--marzo), m\'inimo estival (junio--agosto) y repunte
+           en el cuarto trimestre.}
+\end{figure}
+
+\paragraph{Efectos espaciales de estaci\'on.}
+Los coeficientes $\alpha^\ast_j$ (suma cero) cuantifican la desviaci\'on
+de cada estaci\'on respecto a la tendencia de la cuenca, controlando
+por estacionalidad.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{output/figures/efectos_F2_estaciones_v2.png}
+  \caption{Efectos espaciales de estaci\'on del Modelo~F Etapa~2
+           ($\alpha^\ast_j$, restricci\'on de suma cero).
+           Los valores positivos indican estaciones sistem\'aticamente
+           m\'as contaminadas que la media de la cuenca; los negativos,
+           m\'as limpias.}
+\end{figure}
+
+\paragraph{Comparaci\'on con los modelos previos.}
+El Modelo~F extiende al~E en tres aspectos clave:
+(i) el par\'ametro de rango espacial $\phi$ se estima desde los datos
+(no se fija a priori), lo que permite que los propios datos determinen
+el alcance de la dependencia espacial;
+(ii) la imputaci\'on de los 2{,}617 valores observados se complementa
+con la estimaci\'on de los $365 \times 14 - 2{,}617 = 2{,}493$ valores
+faltantes como variables latentes, aprovechando la estructura espacio-temporal;
+(iii) la Etapa~2 produce una s\'intesis coherente de la calidad del
+aire de la ZMVM que propaga la incertidumbre de la Etapa~1 mediante las
+precisiones heredadas $\hat\tau_{t,j}$.
 
 
 %==============================================================
