@@ -1,5 +1,5 @@
-### ----- REGRESION AVANZADA ----- ###
-# --- Modelos A, B, C1, D v2 (14 estaciones) --- #
+﻿### ----- REGRESION AVANZADA ----- ###
+# --- Modelos A, B, C1, D (14 estaciones) --- #
 
 options(repos="http://cran.itam.mx/")
 
@@ -22,7 +22,7 @@ diagnostico_cadena <- function(sim.obj, param.name, outdir, model.name) {
   idx <- idx[1]
   z1 <- out.a[,1,idx]
   z2 <- out.a[,2,idx]
-  png(file.path(outdir, paste0("diag_cadena_", model.name, "_", param.name, "_v2.png")),
+  png(file.path(outdir, paste0("diag_cadena_", model.name, "_", param.name, ".png")),
       width = 900, height = 900)
   par(mfrow=c(3,2))
   plot(z1, type="l", col="grey50", main = paste("Traza -", param.name))
@@ -43,7 +43,7 @@ wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$p
 setwd(wdir)
 outdir <- "output/figures"
 
-df <- read.csv("data/clean/pm25_valle_mexico_v2.csv", stringsAsFactors = FALSE)
+df <- read.csv("data/clean/pm25_valle_mexico.csv", stringsAsFactors = FALSE)
 
 logy   <- log(df$pm25)
 temp.s <- scale(df$temp)[,1]
@@ -57,7 +57,7 @@ lon.s  <- scale(df$lon)[,1]
 n <- length(logy)
 J <- length(unique(est))
 
-cat("=== Datos v2 ===\n")
+cat("=== Datos ===\n")
 cat("Observaciones:", n, "\n")
 cat("Estaciones:", J, "\n")
 cat("Estaciones:", paste(levels(as.factor(df$estacion)), collapse = ", "), "\n\n")
@@ -83,7 +83,7 @@ ejA <- jags(data.A, inits.A, pars.A, model.file = "scripts/jags_modelo_A_valle.t
 #-Monitoring chain-
 resA <- ejA$BUGSoutput
 
-save(ejA, file = file.path(outdir, "modelo_A_v2.RData"))
+save(ejA, file = file.path(outdir, "modelo_A.RData"))
 
 cat("  Generando diagnosticos de cadena...\n")
 diagnostico_cadena(ejA, "alpha", outdir, "A")
@@ -119,12 +119,12 @@ p_pvo <- ggplot(df_pvo, aes(x = obs, y = pred)) +
     plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
     panel.grid.minor = element_blank()
   )
-ggsave(file.path(outdir, "pred_vs_obs_A_v2.png"), plot = p_pvo,
+ggsave(file.path(outdir, "pred_vs_obs_A.png"), plot = p_pvo,
        width = 5, height = 5, dpi = 120)
 
 write.csv(data.frame(parametro = c("alpha","beta_temp","beta_hr","beta_sen","beta_cos","sigma","DIC","pseudo_R2"),
                      media = c(resA$mean$alpha, resA$mean$beta, resA$mean$sigma, resA$DIC, R2.A)),
-          file.path(outdir, "resumen_modelo_A_v2.csv"), row.names = FALSE)
+          file.path(outdir, "resumen_modelo_A.csv"), row.names = FALSE)
 
 
 # ============================================================
@@ -148,7 +148,7 @@ ejB <- jags(data.B, inits.B, pars.B, model.file = "scripts/jags_modelo_B_valle.t
 #-Monitoring chain-
 resB <- ejB$BUGSoutput
 
-save(ejB, file = file.path(outdir, "modelo_B_v2.RData"))
+save(ejB, file = file.path(outdir, "modelo_B.RData"))
 
 cat("  Generando diagnosticos de cadena...\n")
 diagnostico_cadena(ejB, "alpha", outdir, "B")
@@ -171,14 +171,14 @@ alphaj_df <- data.frame(estacion = levels(as.factor(df$estacion)),
                         alphaj_media = resB$mean$alphaj,
                         alphaj_adj = alphaj_adj,
                         alphaj_sd = resB$sd$alphaj)
-write.csv(alphaj_df, file.path(outdir, "alphaj_modelo_B_v2.csv"), row.names = FALSE)
+write.csv(alphaj_df, file.path(outdir, "alphaj_modelo_B.csv"), row.names = FALSE)
 
 R2.B <- cor(logy, apply(resB$sims.list$yf1, 2, mean))^2
 cat("Modelo B: DIC =", resB$DIC, "| Pseudo-R2 =", round(R2.B, 4), "\n")
 
 write.csv(data.frame(parametro = c("alpha_adj","beta_temp","beta_hr","beta_sen","beta_cos","sigma","DIC","pseudo_R2"),
                      media = c(alpha_adj, resB$mean$beta, resB$mean$sigma, resB$DIC, R2.B)),
-          file.path(outdir, "resumen_modelo_B_v2.csv"), row.names = FALSE)
+          file.path(outdir, "resumen_modelo_B.csv"), row.names = FALSE)
 
 
 # ============================================================
@@ -202,7 +202,7 @@ ejC1 <- jags(data.C1, inits.C1, pars.C1, model.file = "scripts/jags_modelo_C1_va
 #-Monitoring chain-
 resC1 <- ejC1$BUGSoutput
 
-save(ejC1, file = file.path(outdir, "modelo_C1_v2.RData"))
+save(ejC1, file = file.path(outdir, "modelo_C1.RData"))
 
 cat("  Generando diagnosticos de cadena...\n")
 diagnostico_cadena(ejC1, "alpha", outdir, "C1")
@@ -242,7 +242,7 @@ pB <- ggplot(df_efB, aes(x = estacion, y = media, ymin = q025, ymax = q975)) +
         plot.title = element_text(face = "bold", size = 13, color = "#2C3E50"),
         plot.subtitle = element_text(size = 9, face = "italic", color = "gray30"),
         panel.grid.minor = element_blank())
-ggsave(file.path(outdir, "efectos_estacion_B_v2.png"), plot = pB,
+ggsave(file.path(outdir, "efectos_estacion_B.png"), plot = pB,
        width = 8.5, height = 5, dpi = 120)
 
 df_efC1 <- data.frame(
@@ -262,20 +262,20 @@ pC1 <- ggplot(df_efC1, aes(x = estacion, y = media, ymin = q025, ymax = q975)) +
         plot.title = element_text(face = "bold", size = 13, color = "#2C3E50"),
         plot.subtitle = element_text(size = 9, face = "italic", color = "gray30"),
         panel.grid.minor = element_blank())
-ggsave(file.path(outdir, "efectos_estacion_C1_v2.png"), plot = pC1,
+ggsave(file.path(outdir, "efectos_estacion_C1.png"), plot = pC1,
        width = 8.5, height = 5, dpi = 120)
 
 alphaj_C1 <- data.frame(estacion = levels(as.factor(df$estacion)),
                         alphaj_media = resC1$mean$alphaj,
                         alphaj_sd = resC1$sd$alphaj)
-write.csv(alphaj_C1, file.path(outdir, "alphaj_modelo_C1_v2.csv"), row.names = FALSE)
+write.csv(alphaj_C1, file.path(outdir, "alphaj_modelo_C1.csv"), row.names = FALSE)
 
 R2.C1 <- cor(logy, apply(resC1$sims.list$yf1, 2, mean))^2
 cat("Modelo C1: DIC =", resC1$DIC, "| Pseudo-R2 =", round(R2.C1, 4), "| sigma.alphaj =", round(resC1$mean$sigma.alphaj, 4), "\n")
 
 write.csv(data.frame(parametro = c("alpha","beta_temp","beta_hr","beta_sen","beta_cos","sigma","sigma.alphaj","DIC","pseudo_R2"),
                      media = c(resC1$mean$alpha, resC1$mean$beta, resC1$mean$sigma, resC1$mean$sigma.alphaj, resC1$DIC, R2.C1)),
-          file.path(outdir, "resumen_modelo_C1_v2.csv"), row.names = FALSE)
+          file.path(outdir, "resumen_modelo_C1.csv"), row.names = FALSE)
 
 
 # ============================================================
@@ -299,7 +299,7 @@ ejD <- jags(data.D, inits.D, pars.D, model.file = "scripts/jags_modelo_D_valle.t
 #-Monitoring chain-
 resD <- ejD$BUGSoutput
 
-save(ejD, file = file.path(outdir, "modelo_D_v2.RData"))
+save(ejD, file = file.path(outdir, "modelo_D.RData"))
 
 cat("  Generando diagnosticos de cadena...\n")
 diagnostico_cadena(ejD, "alpha", outdir, "D")
@@ -318,13 +318,13 @@ cat("Modelo D: DIC =", resD$DIC, "| Pseudo-R2 =", round(R2.D, 4), "\n")
 
 write.csv(data.frame(parametro = c("alpha","beta_temp","beta_hr","beta_sen","beta_cos","beta_lat","beta_lon","sigma","DIC","pseudo_R2"),
                      media = c(resD$mean$alpha, resD$mean$beta, resD$mean$sigma, resD$DIC, R2.D)),
-          file.path(outdir, "resumen_modelo_D_v2.csv"), row.names = FALSE)
+          file.path(outdir, "resumen_modelo_D.csv"), row.names = FALSE)
 
 
 # ============================================================
 #--- Comparacion de modelos ---
 # ============================================================
-cat("\n=== COMPARACION DE MODELOS v2 ===\n")
+cat("\n=== COMPARACION DE MODELOS ===\n")
 
 comp <- data.frame(
   Modelo = c("A","B","C1","D"),
@@ -333,7 +333,7 @@ comp <- data.frame(
   sigma = c(resA$mean$sigma, resB$mean$sigma, resC1$mean$sigma, resD$mean$sigma)
 )
 print(comp)
-write.csv(comp, file.path(outdir, "comparacion_modelos_v2.csv"), row.names = FALSE)
+write.csv(comp, file.path(outdir, "comparacion_modelos.csv"), row.names = FALSE)
 
 
 # ============================================================
@@ -361,7 +361,7 @@ ejC2 <- jags(data.C2, inits.C2, pars.C2, model.file = "scripts/jags_modelo_C2_ga
 #-Monitoring chain-
 resC2 <- ejC2$BUGSoutput
 
-save(ejC2, file = file.path(outdir, "modelo_C2_v2.RData"))
+save(ejC2, file = file.path(outdir, "modelo_C2.RData"))
 
 cat("  Generando diagnosticos de cadena...\n")
 diagnostico_cadena(ejC2, "alpha",   outdir, "C2")
@@ -383,4 +383,4 @@ cat("      Usar pseudo-R2 en escala log para comparar entre familias.\n")
 
 write.csv(data.frame(parametro = c("alpha","beta_temp","beta_hr","beta_sen","beta_cos","a","DIC","pseudo_R2_log"),
                      media = c(resC2$mean$alpha, resC2$mean$beta, resC2$mean$a, resC2$DIC, R2.C2)),
-          file.path(outdir, "resumen_modelo_C2_v2.csv"), row.names = FALSE)
+          file.path(outdir, "resumen_modelo_C2.csv"), row.names = FALSE)

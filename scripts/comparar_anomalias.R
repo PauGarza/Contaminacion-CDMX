@@ -1,9 +1,9 @@
-# Leer anomalías v2
-anom_v2 <- read.csv('output/figures/anomalias_obs_pred_v2.csv')
-cat('=== ANOMALÍAS v2 (obs - pred) ===\n')
-print(anom_v2[order(-anom_v2$anomalia),])
+﻿# Leer anomalías
+anom <- read.csv('output/figures/anomalias_obs_pred.csv')
+cat('=== ANOMALÍAS (obs - pred) ===\n')
+print(anom[order(-anom$anomalia),])
 
-# Leer alphaj de C1 v2
-alphaj_v2 <- read.csv('output/figures/alphaj_modelo_C1_v2.csv')
-cat('\n=== ALPHAJ v2 (ordenados) ===\n')
-print(alphaj_v2[order(-alphaj_v2$alphaj_mean),])
+# Leer alphaj de C1
+alphaj <- read.csv('output/figures/alphaj_modelo_C1.csv')
+cat('\n=== ALPHAJ (ordenados) ===\n')
+print(alphaj[order(-alphaj$alphaj_mean),])

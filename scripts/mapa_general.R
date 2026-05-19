@@ -1,5 +1,5 @@
-# ============================================================
-# Mapa general v2 — Observado + Prediccion espacial (14 estaciones)
+﻿# ============================================================
+# Mapa general — Observado + Prediccion espacial (14 estaciones)
 # ============================================================
 library(terra)
 library(dplyr)
@@ -9,8 +9,8 @@ setwd(wdir)
 outdir <- "output/figures"
 
 # Cargar datos
-df <- read.csv("data/clean/pm25_valle_mexico_v2.csv", stringsAsFactors = FALSE)
-pred_df <- read.csv(file.path(outdir, "prediccion_espacial_E_valle_v2.csv"), stringsAsFactors = FALSE)
+df <- read.csv("data/clean/pm25_valle_mexico.csv", stringsAsFactors = FALSE)
+pred_df <- read.csv(file.path(outdir, "prediccion_espacial_E_valle.csv"), stringsAsFactors = FALSE)
 
 # Promedio observado por estacion
 est_obs <- df %>%
@@ -34,7 +34,7 @@ colors <- c("#ffffcc", "#ffeda0", "#fed976", "#feb24c", "#fd8d3c",
             "#fc4e2a", "#e31a1c", "#b10026")
 
 # Panel de 2 mapas
-png(file.path(outdir, "mapa_general_v2.png"), width = 1800, height = 900, res = 120)
+png(file.path(outdir, "mapa_general.png"), width = 1800, height = 900, res = 120)
 par(mfrow = c(1, 2), mar = c(2, 2, 4, 1))
 
 # Panel A: Prediccion espacial
@@ -68,7 +68,7 @@ legend("bottomleft", legend = levels(valle$cat_anom), fill = colors_anom,
        title = "Diferencia (ug/m3)", bg = "white", cex = 0.8)
 
 dev.off()
-cat("Mapa general guardado:", file.path(outdir, "mapa_general_v2.png"), "\n")
+cat("Mapa general guardado:", file.path(outdir, "mapa_general.png"), "\n")
 
 # Tabla de anomalias
 cat("\n=== Anomalias (Predicho - Observado) ===\n")
@@ -89,4 +89,4 @@ for(i in 1:nrow(est_obs)) {
   }
 }
 print(anom_df)
-write.csv(anom_df, file.path(outdir, "anomalias_obs_pred_v2.csv"), row.names = FALSE)
+write.csv(anom_df, file.path(outdir, "anomalias_obs_pred.csv"), row.names = FALSE)

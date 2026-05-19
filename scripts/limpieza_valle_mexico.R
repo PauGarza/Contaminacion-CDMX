@@ -1,4 +1,4 @@
-options(repos="http://cran.itam.mx/")
+﻿options(repos="http://cran.itam.mx/")
 library(dplyr)
 library(lubridate)
 
@@ -6,7 +6,7 @@ wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$p
 setwd(wdir)
 
 # ============================================================
-# Limpieza v2 — 56 estaciones en territorio Valle de Mexico
+# Limpieza — 56 estaciones en territorio Valle de Mexico
 # ============================================================
 # Decisiones de limpieza:
 #   1. Solo incluir estaciones con PM2.5, temp Y HR disponibles
@@ -15,7 +15,7 @@ setwd(wdir)
 #   4. Estandarizar covariables despues de la limpieza (no antes)
 #   5. Usar spatial join pre-calculado para asignar municipio/alcaldia
 
-cat("=== Limpieza v2: 56 estaciones Valle de Mexico ===\n")
+cat("=== Limpieza: 56 estaciones Valle de Mexico ===\n")
 
 # 1. Cargar metadatos de estaciones
 est_meta <- read.csv("data/raw/estaciones_territorio_valle.csv", stringsAsFactors=FALSE)
@@ -173,12 +173,12 @@ cat("\n=== Resumen por estacion ===\n")
 print(resumen)
 
 # 8. Guardar
-write.csv(daily, "data/clean/pm25_valle_mexico_v2.csv", row.names=FALSE)
-write.csv(resumen, "data/clean/resumen_estaciones_v2.csv", row.names=FALSE)
+write.csv(daily, "data/clean/pm25_valle_mexico.csv", row.names=FALSE)
+write.csv(resumen, "data/clean/resumen_estaciones.csv", row.names=FALSE)
 
 cat("\nGuardado:\n")
-cat("  data/clean/pm25_valle_mexico_v2.csv (", nrow(daily), "obs x", ncol(daily), "vars )\n")
-cat("  data/clean/resumen_estaciones_v2.csv (", nrow(resumen), "estaciones )\n")
+cat("  data/clean/pm25_valle_mexico.csv (", nrow(daily), "obs x", ncol(daily), "vars )\n")
+cat("  data/clean/resumen_estaciones.csv (", nrow(resumen), "estaciones )\n")
 
 # 9. Comparar con version anterior
 if (file.exists("data/clean/pm25_valle_mexico.csv")) {

@@ -1,12 +1,12 @@
-# ============================================================
-# Prediccion temporal Q4 2023 — Modelo C1 v2 (14 estaciones)
+﻿# ============================================================
+# Prediccion temporal Q4 2023 — Modelo C1 (14 estaciones)
 # ============================================================
 library(dplyr)
 library(lubridate)
 library(ggplot2)
 
 outdir <- "output/figures"
-df <- read.csv("data/clean/pm25_valle_mexico_v2.csv", stringsAsFactors = FALSE)
+df <- read.csv("data/clean/pm25_valle_mexico.csv", stringsAsFactors = FALSE)
 df$date <- as.Date(df$date)
 
 # Climatologia mensual de temp y HR (ene-sep 2023)
@@ -37,8 +37,8 @@ dias_q4 <- ymd(paste0("2023-", 10:12, "-15"))
 meses_q4$sen_t <- sin(2 * pi * yday(dias_q4) / 365)
 meses_q4$cos_t <- cos(2 * pi * yday(dias_q4) / 365)
 
-# Cargar muestras posteriores de C1 v2
-load(file.path(outdir, "modelo_C1_v2.RData"))
+# Cargar muestras posteriores de C1
+load(file.path(outdir, "modelo_C1.RData"))
 sims <- resC1$sims.list
 n_sims <- length(sims$alpha)
 
@@ -82,10 +82,10 @@ prom_global <- pred_resumen %>%
   group_by(mes) %>%
   summarise(pm25 = mean(pm25_mean), q2.5 = mean(pm25_q2.5), q97.5 = mean(pm25_q97.5), .groups = "drop")
 
-write.csv(pred_resumen, file.path(outdir, "prediccion_temporal_q4_2023_v2.csv"), row.names = FALSE)
-write.csv(prom_global, file.path(outdir, "prediccion_temporal_q4_2023_global_v2.csv"), row.names = FALSE)
+write.csv(pred_resumen, file.path(outdir, "prediccion_temporal_q4_2023.csv"), row.names = FALSE)
+write.csv(prom_global, file.path(outdir, "prediccion_temporal_q4_2023_global.csv"), row.names = FALSE)
 
-cat("=== Prediccion Q4 2023 (v2, 14 estaciones) ===\n")
+cat("=== Prediccion Q4 2023 (14 estaciones) ===\n")
 print(prom_global)
 
 # Grafica — estilo Otho
@@ -103,7 +103,7 @@ p <- ggplot(prom_global, aes(x = mes, y = pm25, group = 1)) +
   scale_fill_manual(values  = c("Intervalo de Credibilidad (95%)" = "#E74C3C")) +
   scale_linetype_manual(values = c("Promedio anual observado" = "dashed")) +
   labs(
-    title    = "Predicción temporal Q4 2023 — Modelo C1 v2 (climatología)",
+    title    = "Predicción temporal Q4 2023 — Modelo C1 (climatología)",
     subtitle = "Predicción mensual global para 14 estaciones del Valle de México",
     x        = "Mes",
     y        = expression(paste("Concentración de ", PM[2.5], " (", mu, "g/", m^3, ")")),
@@ -119,6 +119,6 @@ p <- ggplot(prom_global, aes(x = mes, y = pm25, group = 1)) +
     legend.title       = element_text(face = "bold", size = 9)
   )
 
-ggsave(file.path(outdir, "prediccion_temporal_q4_v2.png"),
+ggsave(file.path(outdir, "prediccion_temporal_q4.png"),
        plot = p, width = 7.5, height = 4.5, dpi = 120)
-cat("\nGuardado:", file.path(outdir, "prediccion_temporal_q4_v2.png"), "\n")
+cat("\nGuardado:", file.path(outdir, "prediccion_temporal_q4.png"), "\n")

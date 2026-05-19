@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}
+﻿\documentclass[12pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[spanish]{babel}
 \spanishdecimal{.}
@@ -212,7 +212,7 @@ de la Salud (OMS, 2021) de 5~$\mu$g/m$^3$ para el promedio anual.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{output/figures/eda_valle_v2_histogramas.png}
+  \includegraphics[width=\textwidth]{output/figures/eda_valle_histogramas.png}
   \caption{Histogramas de las variables principales.
            La distribuci\'on de PM2.5 tiene cola derecha pronunciada;
            en escala logar\'itmica se aproxima m\'as a la Normal,
@@ -221,7 +221,7 @@ de la Salud (OMS, 2021) de 5~$\mu$g/m$^3$ para el promedio anual.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{output/figures/eda_valle_v2_scatter_log.png}
+  \includegraphics[width=\textwidth]{output/figures/eda_valle_scatter_log.png}
   \caption{$\log(\text{PM2.5})$ en funci\'on de temperatura, humedad relativa
            y d\'ia del a\~no.
            La l\'inea \texttt{lowess} muestra la tendencia suavizada.
@@ -234,7 +234,7 @@ de la Salud (OMS, 2021) de 5~$\mu$g/m$^3$ para el promedio anual.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{output/figures/eda_valle_v2_scatter_ciudad.png}
+  \includegraphics[width=\textwidth]{output/figures/eda_valle_scatter_ciudad.png}
   \caption{PM2.5 en funci\'on de temperatura, humedad y d\'ia del a\~no,
            coloreado por entidad federativa (CDMX, Estado de M\'exico, Hidalgo).
            La heterogeneidad espacial visible entre grupos motiva la
@@ -243,7 +243,7 @@ de la Salud (OMS, 2021) de 5~$\mu$g/m$^3$ para el promedio anual.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{output/figures/eda_valle_v2_boxplot_estacion.png}
+  \includegraphics[width=\textwidth]{output/figures/eda_valle_boxplot_estacion.png}
   \caption{PM2.5 por estaci\'on, ordenadas de menor a mayor concentraci\'on media.
            La l\'inea punteada roja marca el promedio global ($\approx 19.7\,\mu$g/m$^3$).
            Se observan diferencias claras entre estaciones, especialmente
@@ -254,7 +254,7 @@ de la Salud (OMS, 2021) de 5~$\mu$g/m$^3$ para el promedio anual.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{output/figures/eda_valle_v2_boxplot_mes.png}
+  \includegraphics[width=\textwidth]{output/figures/eda_valle_boxplot_mes.png}
   \caption{PM2.5 por mes. Se aprecia un m\'aximo en invierno (enero--marzo),
            un m\'inimo en verano (junio--julio) y un repunte en agosto--septiembre,
            patr\'on que motiva el uso de t\'erminos de Fourier
@@ -263,7 +263,7 @@ de la Salud (OMS, 2021) de 5~$\mu$g/m$^3$ para el promedio anual.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.6\textwidth]{output/figures/eda_valle_v2_correlacion.png}
+  \includegraphics[width=0.6\textwidth]{output/figures/eda_valle_correlacion.png}
   \caption{Matriz de correlaci\'on de las variables.
            PM2.5 est\'a m\'as correlacionado con \texttt{sen\_t}
            ($r = 0.48$) y con \texttt{cos\_t}, lo que confirma la importancia
@@ -353,7 +353,7 @@ adelgazamiento, con 9{,}000 muestras activas por cadena.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_A_alpha_v2.png}
+  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_A_alpha.png}
   \caption{Diagn\'osticos del Modelo~A para el intercepto $\alpha$.
            La traza muestra el patr\'on de ``oruga'' caracter\'istico de
            buena mezcla; el promedio erg\'odico de ambas cadenas converge
@@ -409,7 +409,7 @@ El Modelo~A explica el 31.3\% de la variaci\'on total de log-PM2.5
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.55\textwidth]{output/figures/pred_vs_obs_A_v2.png}
+  \includegraphics[width=0.55\textwidth]{output/figures/pred_vs_obs_A.png}
   \caption{Observado vs.\ predicho en escala log para el Modelo~A.
            La dispersi\'on considerable alrededor de la diagonal indica
            que el modelo global no captura las diferencias sistem\'aticas
@@ -441,7 +441,7 @@ adelgazamiento de~2, con 5{,}000 muestras activas por cadena.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_B_alpha_v2.png}
+  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_B_alpha.png}
   \caption{Diagn\'osticos del Modelo~B para el intercepto $\alpha$.
            Las cadenas muestran buena convergencia: traza estacionaria,
            promedios erg\'odicos que coinciden, histogramas de la
@@ -489,7 +489,7 @@ $\sqrt{0.333^2 + 0.215^2} \approx 0.397$ log-unidades.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{output/figures/efectos_estacion_B_v2.png}
+  \includegraphics[width=0.8\textwidth]{output/figures/efectos_estacion_B.png}
   \caption{Efectos fijos por estaci\'on $\tilde\alpha_j$ (ajuste suma-cero).
            Barras verticales son intervalos de credibilidad al 95\,\%.
            Valores positivos indican estaciones m\'as contaminadas que el
@@ -583,8 +583,8 @@ adelgazamiento de~2 (5{,}000 muestras activas por cadena).
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.48\textwidth]{output/figures/diag_cadena_C1_alpha_v2.png}
-  \includegraphics[width=0.48\textwidth]{output/figures/diag_cadena_C1_sigma.alphaj_v2.png}
+  \includegraphics[width=0.48\textwidth]{output/figures/diag_cadena_C1_alpha.png}
+  \includegraphics[width=0.48\textwidth]{output/figures/diag_cadena_C1_sigma.alphaj.png}
   \caption{Diagn\'osticos del Modelo~C1:
            intercepto $\alpha$ (izq.) e hiperpar\'ametro $\sigma_\alpha$ (der.).
            Ambos muestran convergencia satisfactoria.
@@ -629,7 +629,7 @@ m\'as contaminada.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{output/figures/efectos_estacion_C1_v2.png}
+  \includegraphics[width=0.8\textwidth]{output/figures/efectos_estacion_C1.png}
   \caption{Efectos aleatorios por estaci\'on $\alpha_j$ del Modelo~C1.
            Barras verticales son intervalos de credibilidad al 95\,\%.
            Comparado con el Modelo~B (Fig.~\ref{fig:efectosB}),
@@ -702,7 +702,7 @@ adelgazamiento de~3 (4{,}000 muestras activas por cadena).
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_C2_a_v2.png}
+  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_C2_a.png}
   \caption{Diagn\'osticos del par\'ametro de forma $a$ del Modelo~C2.
            Las cadenas muestran mayor autocorrelaci\'on que en los
            modelos Normal (la ACF tarda m\'as en caer), lo que es
@@ -768,7 +768,7 @@ Se corrieron 10{,}000 iteraciones con 1{,}000 de calentamiento.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_D_alpha_v2.png}
+  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_D_alpha.png}
   \caption{Diagn\'osticos del Modelo~D para el intercepto $\alpha$.
            La convergencia es satisfactoria: traza estacionaria, promedios
            erg\'odicos coincidentes y ACF que decae r\'apidamente.}
@@ -1042,7 +1042,7 @@ Se elige el \textbf{Modelo~C1} como el modelo preferido.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\textwidth]{output/figures/efectos_espaciales_E_v2.png}
+  \includegraphics[width=0.7\textwidth]{output/figures/efectos_espaciales_E.png}
   \caption{Efectos espaciales $\hat\alpha_j$ por estaci\'on usados como
            puntos de anclaje para el kriging.
            El rango de variaci\'on ($-0.27$ a $+0.24$) es consistente
@@ -1051,7 +1051,7 @@ Se elige el \textbf{Modelo~C1} como el modelo preferido.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{output/figures/mapa_prediccion_E_valle_v2.png}
+  \includegraphics[width=\textwidth]{output/figures/mapa_prediccion_E_valle.png}
   \caption{Predicci\'on de PM2.5 promedio para los 141~pol\'igonos del
            Valle de M\'exico (Modelo~E, kriging bayesiano con kernel
            exponencial, $\rho = 0.08^\circ$).
@@ -1148,13 +1148,14 @@ reflejando correctamente la mayor incertidumbre de la interpolaci\'on
 en zonas alejadas de sensores.
 
 
+
 \subsection{Resultados del Modelo~F}
 
 \paragraph{Diagn\'ostico de convergencia.}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_F1_beta1_v2.png}
+  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_F1_beta1.png}
   \caption{Diagn\'osticos MCMC del Modelo~F Etapa~1 para $\beta_1$
            (coeficiente del t\'ermino $\text{sen}_t$).
            Las dos cadenas mezclan correctamente y la ACF decae
@@ -1163,7 +1164,7 @@ en zonas alejadas de sensores.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_F2_gamma1_v2.png}
+  \includegraphics[width=0.7\textwidth]{output/figures/diag_cadena_F2_gamma1.png}
   \caption{Diagn\'osticos MCMC del Modelo~F Etapa~2 para $\gamma_1$
            (intercepto global de la ZMVM).
            Se usaron 3~cadenas con adelgazamiento $\text{thin}=50$;
@@ -1179,7 +1180,7 @@ celdas.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{output/figures/validacion_F1_imputacion_v2.png}
+  \includegraphics[width=\textwidth]{output/figures/validacion_F1_imputacion.png}
   \caption{Validaci\'on de la imputaci\'on MCMC (Etapa~1) para tres
            estaciones con distinta densidad de datos: Hospital General
            de M\'exico (52~obs, escenario cr\'itico), Santiago
@@ -1196,7 +1197,7 @@ ruido local de cada estaci\'on.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{output/figures/serie_mu_cdmx_v2.png}
+  \includegraphics[width=\textwidth]{output/figures/serie_mu_cdmx.png}
   \caption{Serie de tiempo macro-ambiental de la ZMVM estimada por el
            Modelo~F Etapa~2.
            La l\'inea s\'olida es la media posterior de $\exp(\mu^\text{ZMVM}_t)$
@@ -1214,7 +1215,7 @@ por estacionalidad.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\textwidth]{output/figures/efectos_F2_estaciones_v2.png}
+  \includegraphics[width=0.7\textwidth]{output/figures/efectos_F2_estaciones.png}
   \caption{Efectos espaciales de estaci\'on del Modelo~F Etapa~2
            ($\alpha^\ast_j$, restricci\'on de suma cero).
            Los valores positivos indican estaciones sistem\'aticamente
@@ -1311,33 +1312,33 @@ plana sobre los coeficientes.
 
 %--------------------------------------------------------------
 \subsection*{Limpieza y preparaci\'on de datos ---
-             \texttt{limpieza\_valle\_mexico\_v2.R}}
+             \texttt{limpieza\_valle\_mexico\.R}}
 %--------------------------------------------------------------
-\lstinputlisting[language=R]{scripts/limpieza_valle_mexico_v2.R}
+\lstinputlisting[language=R]{scripts/limpieza_valle_mexico.R}
 
 %--------------------------------------------------------------
 \subsection*{An\'alisis exploratorio de datos ---
-             \texttt{eda\_valle\_mexico\_v2.R}}
+             \texttt{eda\_valle\_mexico\.R}}
 %--------------------------------------------------------------
-\lstinputlisting[language=R]{scripts/eda_valle_mexico_v2.R}
+\lstinputlisting[language=R]{scripts/eda_valle_mexico.R}
 
 %--------------------------------------------------------------
 \subsection*{Modelos A, B, C1, C2 y D ---
-             \texttt{modelos\_A\_B\_C1\_D\_v2.R}}
+             \texttt{modelos\_A\_B\_C1\_D\.R}}
 %--------------------------------------------------------------
-\lstinputlisting[language=R]{scripts/modelos_A_B_C1_D_v2.R}
+\lstinputlisting[language=R]{scripts/modelos_A_B_C1_D.R}
 
 %--------------------------------------------------------------
 \subsection*{Modelo E --- Proceso Gaussiano y Kriging ---
-             \texttt{modelo\_E\_valle\_v2.R}}
+             \texttt{modelo\_E\_valle\.R}}
 %--------------------------------------------------------------
-\lstinputlisting[language=R]{scripts/modelo_E_valle_v2.R}
+\lstinputlisting[language=R]{scripts/modelo_E_valle.R}
 
 %--------------------------------------------------------------
 \subsection*{Mapa de predicci\'on espacial ---
-             \texttt{mapa\_valle\_mexico\_v2.R}}
+             \texttt{mapa\_valle\_mexico\.R}}
 %--------------------------------------------------------------
-\lstinputlisting[language=R]{scripts/mapa_valle_mexico_v2.R}
+\lstinputlisting[language=R]{scripts/mapa_valle_mexico.R}
 
 %--------------------------------------------------------------
 \subsection*{Modelo F, Etapa~1 --- Espacio-temporal MCMC ---

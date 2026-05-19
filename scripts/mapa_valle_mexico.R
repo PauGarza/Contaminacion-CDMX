@@ -1,4 +1,4 @@
-options(repos="http://cran.itam.mx/")
+﻿options(repos="http://cran.itam.mx/")
 
 library(dplyr)
 library(terra)
@@ -63,7 +63,7 @@ for (i in seq_along(pm_vals)) {
 # ============================================================
 # 5. Mapa con nombres en centroides
 # ============================================================
-png(file.path(imgdir, "mapa_valle_mexico_v2.png"), width=1100, height=950)
+png(file.path(imgdir, "mapa_valle_mexico.png"), width=1100, height=950)
 par(mfrow=c(1,1), mar=c(4,4,5,8))
 
 plot(valle_map, fill=TRUE, col=colores, border="grey55", lwd=0.4,
@@ -116,4 +116,4 @@ legend(x=-98.90, y=19.40,
        pch=21, pt.bg=c("firebrick2","steelblue"), pt.cex=1.8, bty="n", cex=0.8, xpd=TRUE)
 
 dev.off()
-cat("Guardado: mapa_valle_mexico_v2.png\n")
+cat("Guardado: mapa_valle_mexico.png\n")

@@ -1,4 +1,4 @@
-options(repos="http://cran.itam.mx/")
+﻿options(repos="http://cran.itam.mx/")
 library(dplyr)
 library(lubridate)
 library(ggplot2)
@@ -9,13 +9,13 @@ wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$p
 setwd(wdir)
 
 # ============================================================
-# EDA v2 — Exploracion del dataset expandido
+# EDA — Exploracion del dataset expandido
 # ============================================================
 
-df <- read.csv("data/clean/pm25_valle_mexico_v2.csv", stringsAsFactors=FALSE)
+df <- read.csv("data/clean/pm25_valle_mexico.csv", stringsAsFactors=FALSE)
 df$date <- as.Date(df$date)
 
-cat("=== EDA v2: Valle de Mexico expandido ===\n")
+cat("=== EDA: Valle de Mexico expandido ===\n")
 cat("Observaciones:", nrow(df), "\n")
 cat("Estaciones:", length(unique(df$estacion)), "\n")
 cat("Periodo:", min(df$date), "a", max(df$date), "\n")
@@ -83,9 +83,9 @@ p_series <- ggplot(daily_long, aes(x = date, y = valor, color = variable)) +
         plot.subtitle      = element_text(size = 9.5, face = "italic", color = "gray30"),
         panel.grid.minor   = element_blank(),
         strip.text         = element_text(face = "bold", size = 10))
-ggsave("output/figures/eda_valle_v2_series.png", plot = p_series,
+ggsave("output/figures/eda_valle_series.png", plot = p_series,
        width = 12, height = 4, dpi = 120)
-cat("\nGuardado: output/figures/eda_valle_v2_series.png\n")
+cat("\nGuardado: output/figures/eda_valle_series.png\n")
 
 # Boxplot por estacion (ordenadas por PM2.5)
 est_ord <- resumen$estacion[order(resumen$pm25_mean)]
@@ -112,9 +112,9 @@ p_box_est <- ggplot(df, aes(x = estacion, y = pm25, fill = ciudad)) +
         panel.grid.minor = element_blank(),
         legend.position  = "bottom",
         legend.title     = element_text(face = "bold", size = 9))
-ggsave("output/figures/eda_valle_v2_boxplot_estacion.png", plot = p_box_est,
+ggsave("output/figures/eda_valle_boxplot_estacion.png", plot = p_box_est,
        width = 10, height = 7, dpi = 120)
-cat("Guardado: output/figures/eda_valle_v2_boxplot_estacion.png\n")
+cat("Guardado: output/figures/eda_valle_boxplot_estacion.png\n")
 
 # Boxplot por mes
 meses_esp <- c("Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic")
@@ -130,9 +130,9 @@ p_box_mes <- ggplot(df, aes(x = mes_nombre, y = pm25)) +
   theme(plot.title       = element_text(face = "bold", size = 13, color = "#2C3E50"),
         plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
         panel.grid.minor = element_blank())
-ggsave("output/figures/eda_valle_v2_boxplot_mes.png", plot = p_box_mes,
+ggsave("output/figures/eda_valle_boxplot_mes.png", plot = p_box_mes,
        width = 9, height = 5, dpi = 120)
-cat("Guardado: output/figures/eda_valle_v2_boxplot_mes.png\n")
+cat("Guardado: output/figures/eda_valle_boxplot_mes.png\n")
 
 # Histogramas
 df_hist <- data.frame(
@@ -156,9 +156,9 @@ p_hist <- ggplot(df_hist, aes(x = valor)) +
         plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
         panel.grid.minor = element_blank(),
         strip.text       = element_text(face = "bold", size = 9))
-ggsave("output/figures/eda_valle_v2_histogramas.png", plot = p_hist,
+ggsave("output/figures/eda_valle_histogramas.png", plot = p_hist,
        width = 12, height = 4, dpi = 120)
-cat("Guardado: output/figures/eda_valle_v2_histogramas.png\n")
+cat("Guardado: output/figures/eda_valle_histogramas.png\n")
 
 # Correlacion — estilo Otho
 vars_cor <- c("temp", "hr", "sen_t", "cos_t", "pm25")
@@ -193,9 +193,9 @@ p_cor <- ggplot(cor_long_eda, aes(x = var2, y = var1, fill = corr)) +
         axis.text.y  = element_text(face = "bold", size = 10, color = "#2C3E50"),
         legend.title = element_text(face = "bold", size = 9),
         legend.position = "right")
-ggsave("output/figures/eda_valle_v2_correlacion.png", plot = p_cor,
+ggsave("output/figures/eda_valle_correlacion.png", plot = p_cor,
        width = 6.5, height = 5.5, dpi = 120)
-cat("Guardado: output/figures/eda_valle_v2_correlacion.png\n")
+cat("Guardado: output/figures/eda_valle_correlacion.png\n")
 
 # Scatter con lowess — estilo Otho
 df_sc <- data.frame(temp = df$temp, hr = df$hr, dia = df$dia_año, pm25 = df$pm25) %>%
@@ -217,9 +217,9 @@ p_scatter <- ggplot(df_sc, aes(x = x, y = pm25)) +
         plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
         panel.grid.minor = element_blank(),
         strip.text       = element_text(face = "bold", size = 10))
-ggsave("output/figures/eda_valle_v2_scatter.png", plot = p_scatter,
+ggsave("output/figures/eda_valle_scatter.png", plot = p_scatter,
        width = 12, height = 4.5, dpi = 120)
-cat("Guardado: output/figures/eda_valle_v2_scatter.png\n")
+cat("Guardado: output/figures/eda_valle_scatter.png\n")
 
 # Scatter log(PM2.5) vs covariables — motiva la transformación log
 df_scl <- data.frame(temp = df$temp, hr = df$hr, dia = df$dia_año, logpm25 = log(df$pm25)) %>%
@@ -240,9 +240,9 @@ p_scl <- ggplot(df_scl, aes(x = x, y = logpm25)) +
         plot.subtitle    = element_text(size = 9.5, face = "italic", color = "gray30"),
         panel.grid.minor = element_blank(),
         strip.text       = element_text(face = "bold", size = 10))
-ggsave("output/figures/eda_valle_v2_scatter_log.png", plot = p_scl,
+ggsave("output/figures/eda_valle_scatter_log.png", plot = p_scl,
        width = 12, height = 4.5, dpi = 120)
-cat("Guardado: output/figures/eda_valle_v2_scatter_log.png\n")
+cat("Guardado: output/figures/eda_valle_scatter_log.png\n")
 
 # Scatter coloreado por ciudad — heterogeneidad espacial antes del modelo
 df_scc <- data.frame(temp = df$temp, hr = df$hr, dia = df$dia_año,
@@ -269,10 +269,10 @@ p_scc <- ggplot(df_scc, aes(x = x, y = pm25, color = ciudad)) +
         strip.text       = element_text(face = "bold", size = 10),
         legend.position  = "bottom",
         legend.title     = element_text(face = "bold", size = 9))
-ggsave("output/figures/eda_valle_v2_scatter_ciudad.png", plot = p_scc,
+ggsave("output/figures/eda_valle_scatter_ciudad.png", plot = p_scc,
        width = 12, height = 4.5, dpi = 120)
-cat("Guardado: output/figures/eda_valle_v2_scatter_ciudad.png\n")
+cat("Guardado: output/figures/eda_valle_scatter_ciudad.png\n")
 
 # Guardar resumen
-write.csv(resumen, "output/figures/eda_valle_v2_resumen.csv", row.names=FALSE)
-cat("\nResumen guardado: output/figures/eda_valle_v2_resumen.csv\n")
+write.csv(resumen, "output/figures/eda_valle_resumen.csv", row.names=FALSE)
+cat("\nResumen guardado: output/figures/eda_valle_resumen.csv\n")

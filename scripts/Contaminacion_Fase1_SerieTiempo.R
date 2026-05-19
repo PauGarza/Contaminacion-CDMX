@@ -1,4 +1,4 @@
-### ----- REGRESION AVANZADA ----- ###
+﻿### ----- REGRESION AVANZADA ----- ###
 # --- Modelo espacio-temporal Bayesiano — Panel balanceado 365x14 + imputación MCMC --- #
 # NOTA: Requiere scripts/jags_modelo_espacio_temporal.txt (pedir a Otho)
 
@@ -11,7 +11,7 @@ library(ggplot2)
 wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ".."))
 setwd(wdir)
 
-ruta_archivo <- "data/clean/pm25_valle_mexico_v2.csv"
+ruta_archivo <- "data/clean/pm25_valle_mexico.csv"
 
 df_original <- read.csv(ruta_archivo)
 df_original$date <- as.Date(df_original$date)
@@ -154,7 +154,7 @@ pm25_mean <- apply(sims_log_pm25, c(2, 3), mean)
 pm25_inf  <- apply(sims_log_pm25, c(2, 3), quantile, probs = 0.025)
 pm25_sup  <- apply(sims_log_pm25, c(2, 3), quantile, probs = 0.975)
 
-df_post_analisis_v2 <- grid_completo %>%
+df_post_analisis <- grid_completo %>%
   mutate(
     pm25_estimado = exp(as.vector(pm25_mean)),
     ic_inferior   = exp(as.vector(pm25_inf)),
@@ -163,7 +163,7 @@ df_post_analisis_v2 <- grid_completo %>%
 
 estaciones_objetivo <- c("Hospital General de México", "Santiago Acahualtepec", "Benito Juárez")
 
-df_comparativa <- df_post_analisis_v2 %>%
+df_comparativa <- df_post_analisis %>%
   filter(estacion %in% estaciones_objetivo) %>%
   mutate(
     estacion_regimen = factor(

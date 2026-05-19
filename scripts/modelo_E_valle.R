@@ -1,5 +1,5 @@
-### ----- REGRESION AVANZADA ----- ###
-# --- Modelo E v2: GP espacial (14 estaciones) --- #
+﻿### ----- REGRESION AVANZADA ----- ###
+# --- Modelo E: GP espacial (14 estaciones) --- #
 
 options(repos="http://cran.itam.mx/")
 
@@ -23,7 +23,7 @@ diagnostico_cadena <- function(sim.obj, param.name, outdir, model.name) {
   idx <- idx[1]
   z1 <- out.a[,1,idx]
   z2 <- out.a[,2,idx]
-  png(file.path(outdir, paste0("diag_cadena_", model.name, "_", param.name, "_v2.png")),
+  png(file.path(outdir, paste0("diag_cadena_", model.name, "_", param.name, ".png")),
       width = 900, height = 900)
   par(mfrow=c(3,2))
   plot(z1, type="l", col="grey50", main = paste("Traza -", param.name))
@@ -44,7 +44,7 @@ wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$p
 setwd(wdir)
 outdir <- "output/figures"
 
-df <- read.csv("data/clean/pm25_valle_mexico_v2.csv", stringsAsFactors = FALSE)
+df <- read.csv("data/clean/pm25_valle_mexico.csv", stringsAsFactors = FALSE)
 
 logy   <- log(df$pm25)
 temp.s <- scale(df$temp)[,1]
@@ -55,13 +55,13 @@ est    <- as.numeric(as.factor(df$estacion))
 n <- length(logy)
 J <- length(unique(est))
 
-cat("=== Modelo E v2 ===\n")
+cat("=== Modelo E ===\n")
 cat("Observaciones:", n, "| Estaciones:", J, "\n")
 
 # ============================================================
 #--- Modelo C1 (base para GP espacial) ---
 # ============================================================
-cat("\n=== Ajustando Modelo C1 v2 (base del GP) ===\n")
+cat("\n=== Ajustando Modelo C1 (base del GP) ===\n")
 
 #-Defining data-
 data.C1 <- list(n = n, J = J, logy = logy, temp = temp.s, hr = hr.s, sen_t = sen_t, cos_t = cos_t, est = est)
@@ -79,7 +79,7 @@ ejC1 <- jags(data.C1, inits.C1, pars.C1, model.file = "scripts/jags_modelo_C1_va
 #-Monitoring chain-
 resC1 <- ejC1$BUGSoutput
 
-save(ejC1, file = file.path(outdir, "modelo_E_C1base_v2.RData"))
+save(ejC1, file = file.path(outdir, "modelo_E_C1base.RData"))
 
 cat("  Generando diagnosticos de cadena...\n")
 diagnostico_cadena(ejC1, "alpha", outdir, "E_C1")
@@ -123,7 +123,7 @@ p_ef <- ggplot(df_ef, aes(x = estacion, y = media)) +
     panel.grid.minor = element_blank(),
     axis.text.y      = element_text(size = 9, color = "#2C3E50")
   )
-ggsave(file.path(outdir, "efectos_espaciales_E_v2.png"),
+ggsave(file.path(outdir, "efectos_espaciales_E.png"),
        plot = p_ef, width = 7.5, height = 5.5, dpi = 120)
 
 R2.C1 <- cor(logy, apply(resC1$sims.list$yf1, 2, mean))^2
@@ -202,7 +202,7 @@ pred_df <- data.frame(
   stringsAsFactors = FALSE
 )
 
-write.csv(pred_df, file.path(outdir, "prediccion_espacial_E_valle_v2.csv"), row.names = FALSE)
+write.csv(pred_df, file.path(outdir, "prediccion_espacial_E_valle.csv"), row.names = FALSE)
 cat("Predicciones guardadas:\n")
 
 
@@ -231,10 +231,10 @@ est_unique <- aggregate(cbind(lon, lat) ~ estacion, data = df, FUN = mean)
 est_unique <- est_unique[order(est_unique$estacion), ]
 est_unique$num <- 1:nrow(est_unique)
 
-png(file.path(outdir, "mapa_prediccion_E_valle_v2.png"), width = 1400, height = 1000, res = 120)
+png(file.path(outdir, "mapa_prediccion_E_valle.png"), width = 1400, height = 1000, res = 120)
 par(oma = c(0, 0, 2, 0), mar = c(2, 2, 1, 9))
 plot(valle, "cat", col = colors)
-mtext("PM2.5 predicho — Modelo E v2 (GP espacial, 14 estaciones)",
+mtext("PM2.5 predicho — Modelo E (GP espacial, 14 estaciones)",
       outer = TRUE, side = 3, line = 0.5, font = 2, cex = 1.05, col = "#2C3E50")
 points(est_unique$lon, est_unique$lat, pch = 21, bg = "white", col = "black", cex = 2, lwd = 2)
 text(est_unique$lon, est_unique$lat, labels = est_unique$num,

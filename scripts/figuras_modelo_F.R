@@ -1,4 +1,4 @@
-### ----- REGRESION AVANZADA ----- ###
+﻿### ----- REGRESION AVANZADA ----- ###
 # --- Guardar figuras del Modelo F para el reporte LaTeX --- #
 # Requiere: output/figures/Contaminacion_Fase1_SerieTiempo.RData
 #           output/figures/Contaminacion_Fase2_SerieTiempo.RData
@@ -20,7 +20,7 @@ beta_c1 <- output_jags$BUGSoutput$sims.array[, 1, "beta[1]"]
 beta_c2 <- output_jags$BUGSoutput$sims.array[, 2, "beta[1]"]
 N_iter  <- length(beta_c1)
 
-png(file.path(outdir, "diag_cadena_F1_beta1_v2.png"), width = 900, height = 900)
+png(file.path(outdir, "diag_cadena_F1_beta1.png"), width = 900, height = 900)
 par(mfrow = c(3, 2), mar = c(4, 4, 2, 1), oma = c(0, 0, 3, 0))
 
 plot(beta_c1, type = "l", col = "#3498DB", xlab = "Iteracion", ylab = "Valor",
@@ -43,7 +43,7 @@ acf(beta_c2, main = "ACF cadena 2")
 
 title(main = "Modelo F Etapa 1 — Diagnostico MCMC: beta[1]", outer = TRUE, font = 2)
 dev.off()
-cat("Figura 1 guardada: diag_cadena_F1_beta1_v2.png\n")
+cat("Figura 1 guardada: diag_cadena_F1_beta1.png\n")
 
 # ============================================================
 # FIGURA 2: Diagnostico MCMC Etapa 2 — gamma[1]
@@ -53,7 +53,7 @@ g2 <- output_fase2$BUGSoutput$sims.array[, 2, "gamma[1]"]
 g3 <- output_fase2$BUGSoutput$sims.array[, 3, "gamma[1]"]
 N2 <- length(g1)
 
-png(file.path(outdir, "diag_cadena_F2_gamma1_v2.png"), width = 900, height = 900)
+png(file.path(outdir, "diag_cadena_F2_gamma1.png"), width = 900, height = 900)
 par(mfrow = c(3, 2), mar = c(4, 4, 2, 1), oma = c(0, 0, 3, 0))
 
 rng <- range(c(g1, g2, g3))
@@ -85,14 +85,14 @@ hist(g3, breaks = 25, col = "#2ECC71", border = "white",
 
 title(main = "Modelo F Etapa 2 — Diagnostico MCMC: gamma[1]", outer = TRUE, font = 2)
 dev.off()
-cat("Figura 2 guardada: diag_cadena_F2_gamma1_v2.png\n")
+cat("Figura 2 guardada: diag_cadena_F2_gamma1.png\n")
 
 # ============================================================
 # FIGURA 3: Validacion imputacion Fase 1 — 3 estaciones
 # ============================================================
 
 # Reconstruir datos necesarios para las 3 estaciones de validacion
-ruta_csv <- "data/clean/pm25_valle_mexico_v2.csv"
+ruta_csv <- "data/clean/pm25_valle_mexico.csv"
 df_orig  <- read.csv(ruta_csv)
 df_orig$date <- as.Date(df_orig$date)
 
@@ -149,9 +149,9 @@ p_val <- ggplot(df_val, aes(x = date)) +
     panel.grid.minor = element_blank()
   )
 
-ggsave(file.path(outdir, "validacion_F1_imputacion_v2.png"),
+ggsave(file.path(outdir, "validacion_F1_imputacion.png"),
        plot = p_val, width = 9, height = 8, dpi = 120)
-cat("Figura 3 guardada: validacion_F1_imputacion_v2.png\n")
+cat("Figura 3 guardada: validacion_F1_imputacion.png\n")
 
 # ============================================================
 # FIGURA 4: Serie tiempo macro-ambiental ZMVM (Etapa 2)
@@ -184,9 +184,9 @@ p_zmvm <- ggplot(df_zmvm, aes(x = fecha)) +
     panel.grid.minor = element_blank()
   )
 
-ggsave(file.path(outdir, "serie_mu_cdmx_v2.png"),
+ggsave(file.path(outdir, "serie_mu_cdmx.png"),
        plot = p_zmvm, width = 9, height = 4.5, dpi = 120)
-cat("Figura 4 guardada: serie_mu_cdmx_v2.png\n")
+cat("Figura 4 guardada: serie_mu_cdmx.png\n")
 
 # ============================================================
 # FIGURA 5: Efectos espaciales Etapa 2 — alpha_corregido
@@ -223,8 +223,8 @@ p_ef <- ggplot(df_ef, aes(x = estacion, y = media)) +
     axis.text.y   = element_text(size = 9, color = "#2C3E50")
   )
 
-ggsave(file.path(outdir, "efectos_F2_estaciones_v2.png"),
+ggsave(file.path(outdir, "efectos_F2_estaciones.png"),
        plot = p_ef, width = 7.5, height = 5.5, dpi = 120)
-cat("Figura 5 guardada: efectos_F2_estaciones_v2.png\n")
+cat("Figura 5 guardada: efectos_F2_estaciones.png\n")
 
 cat("\n=== Todas las figuras del Modelo F guardadas en", outdir, "===\n")

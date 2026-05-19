@@ -1,5 +1,5 @@
-### ----- REGRESION AVANZADA ----- ###
-# --- Mapas de anomalias separados — Modelo E v2 --- #
+﻿### ----- REGRESION AVANZADA ----- ###
+# --- Mapas de anomalias separados — Modelo E --- #
 
 library(terra)
 library(dplyr)
@@ -8,8 +8,8 @@ wdir <- normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$p
 setwd(wdir)
 outdir <- "output/figures"
 
-df      <- read.csv("data/clean/pm25_valle_mexico_v2.csv", stringsAsFactors = FALSE)
-pred_df <- read.csv(file.path(outdir, "prediccion_espacial_E_valle_v2.csv"), stringsAsFactors = FALSE)
+df      <- read.csv("data/clean/pm25_valle_mexico.csv", stringsAsFactors = FALSE)
+pred_df <- read.csv(file.path(outdir, "prediccion_espacial_E_valle.csv"), stringsAsFactors = FALSE)
 
 est_obs <- df %>%
   group_by(estacion) %>%
@@ -39,11 +39,11 @@ valle$cat_anom <- cut(valle$anomalia, breaks = breaks, include.lowest = TRUE)
 colors <- c("#2166ac", "#4393c3", "#92c5de", "#d1e5f0", "#f7f7f7",
             "#fddbc7", "#f4a582", "#d6604d")
 
-png(file.path(outdir, "mapa_anomalia_espacial_E_valle_v2.png"),
+png(file.path(outdir, "mapa_anomalia_espacial_E_valle.png"),
     width = 1400, height = 1000, res = 120)
 par(oma = c(0, 0, 3, 0), mar = c(2, 2, 1, 9))
 plot(valle, "cat_anom", col = colors)
-mtext("Anomalia espacial PM2.5 — Prediccion GP v2 (14 est)",
+mtext("Anomalia espacial PM2.5 — Prediccion GP (14 est)",
       outer = TRUE, side = 3, line = 1.5, font = 2, cex = 1.05, col = "#2C3E50")
 mtext(paste0("Desviacion respecto a media global (", round(media_global, 1), " ug/m3)"),
       outer = TRUE, side = 3, line = 0.4, font = 3, cex = 0.85, col = "gray30")
@@ -60,7 +60,7 @@ legend("bottomleft", inset = c(0.06, 0.02),
        fill = colors,
        title = "Anomalia (ug/m3)", bg = "white", cex = 0.85)
 dev.off()
-cat("Mapa 1 guardado:", file.path(outdir, "mapa_anomalia_espacial_E_valle_v2.png"), "\n")
+cat("Mapa 1 guardado:", file.path(outdir, "mapa_anomalia_espacial_E_valle.png"), "\n")
 
 # ============================================================
 # MAPA 2: Anomalias observadas por estacion (obs - pred)
@@ -94,11 +94,11 @@ get_color <- function(x) {
 }
 est_obs$col_punto <- sapply(est_obs$anomalia_obs, get_color)
 
-png(file.path(outdir, "mapa_anomalia_observada_E_valle_v2.png"),
+png(file.path(outdir, "mapa_anomalia_observada_E_valle.png"),
     width = 1400, height = 1000, res = 120)
 par(oma = c(0, 0, 3, 0), mar = c(2, 2, 1, 9))
 plot(valle, col = "gray90", border = "gray70")
-mtext("Anomalia observada PM2.5 — Modelo E v2 (14 est)",
+mtext("Anomalia observada PM2.5 — Modelo E (14 est)",
       outer = TRUE, side = 3, line = 1.5, font = 2, cex = 1.05, col = "#2C3E50")
 mtext("Observado - Predicho por municipio",
       outer = TRUE, side = 3, line = 0.4, font = 3, cex = 0.85, col = "gray30")
@@ -125,7 +125,7 @@ legend("bottomleft", inset = c(0.06, 0.02),
        fill = colors_obs,
        title = "Obs - Pred (ug/m3)", bg = "white", cex = 0.85)
 dev.off()
-cat("Mapa 2 guardado:", file.path(outdir, "mapa_anomalia_observada_E_valle_v2.png"), "\n")
+cat("Mapa 2 guardado:", file.path(outdir, "mapa_anomalia_observada_E_valle.png"), "\n")
 
 resumen <- data.frame(
   poligono = valle$NAME_2,

@@ -1,4 +1,4 @@
-### ----- REGRESION AVANZADA ----- ###
+﻿### ----- REGRESION AVANZADA ----- ###
 # Mapa de calor animado (GIF) de PM2.5 en el Valle de Mexico
 # Fuente: Modelo F — Fase 2 (modelo jerarquico bayesiano)
 # Granularidad: semanal (52 frames)
@@ -27,7 +27,7 @@ cat("Modelos cargados.\n")
 # ============================================================
 # 2. Coordenadas de estaciones (orden alfabetico = orden del modelo)
 # ============================================================
-df_orig <- read.csv("data/clean/pm25_valle_mexico_v2.csv")
+df_orig <- read.csv("data/clean/pm25_valle_mexico.csv")
 df_orig$date <- as.Date(df_orig$date)
 
 estaciones <- df_orig %>%
