@@ -30,7 +30,19 @@
   commentstyle=\color{gray!55},
   keywordstyle=\bfseries,
   extendedchars=true,
-  inputencoding=utf8,
+  literate=
+    {á}{{\'{a}}}1 {é}{{\'{e}}}1 {í}{{\'{i}}}1 {ó}{{\'{o}}}1 {ú}{{\'{u}}}1
+    {Á}{{\'{A}}}1 {É}{{\'{E}}}1 {Í}{{\'{I}}}1 {Ó}{{\'{O}}}1 {Ú}{{\'{U}}}1
+    {ñ}{{\~{n}}}1 {Ñ}{{\~{N}}}1 {ü}{{\"u}}1 {Ü}{{\"U}}1
+    {¿}{{?`}}1 {¡}{{!`}}1
+    {—}{{---}}1
+    {–}{{--}}1
+    {µ}{{\ensuremath{\mu}}}1
+    {°}{{\ensuremath{^\circ}}}1
+    {³}{{\textsuperscript{3}}}1
+    {²}{{\textsuperscript{2}}}1
+    {→}{{->}}1
+    {←}{{<-}}1,
 }
 
 \title{Proyecto Final --- Regresi\'on Avanzada\\[6pt]
@@ -40,6 +52,9 @@
 
 \begin{document}
 \maketitle
+
+\tableofcontents
+\bigskip
 
 %==============================================================
 \section{Introducci\'on}
@@ -57,7 +72,7 @@ respiratorias, cardiovasculares y aumento en la mortalidad.
 
 La fuente de datos es el Sistema Nacional de Informaci\'on de la
 Calidad del Aire~(SINAICA), operado por el Instituto Nacional de
-Ecolog\'ia y Cambio Clim\'atico.
+Ecolog\'ia y Cambio Clim\'atico (INECC, s.f.).
 Se descargaron datos de las 56 estaciones de monitoreo ubicadas dentro
 de los l\'imites del Valle de M\'exico (16~alcald\'ias de la CDMX,
 59~municipios del Estado de M\'exico, m\'as Tizayuca en Hidalgo).
@@ -73,7 +88,7 @@ contaminaci\'on en zonas sin sensores?}
 \end{quote}
 
 Para responderla se ajustan seis modelos bayesianos de complejidad
-creciente en JAGS a trav\'es del paquete \texttt{R2jags}:
+creciente en JAGS a trav\'es del paquete \texttt{R2jags} (Plummer, 2003; R Core Team, 2025):
 
 \begin{enumerate}
   \item \textbf{Modelo A --- Normal global}: ¿cu\'anto de la variaci\'on de PM2.5
@@ -92,8 +107,8 @@ creciente en JAGS a trav\'es del paquete \texttt{R2jags}:
 
 El \textbf{Modelo E} usa los efectos espaciales del Modelo~C1
 para hacer kriging bayesiano y predecir PM2.5 en los 141~pol\'igonos del
-Valle de M\'exico, incluyendo los 44~municipios de Edomex sin estaciones
-de monitoreo.
+Valle de M\'exico (Global Administrative Areas, s.f.), incluyendo los
+44~municipios de Edomex sin estaciones de monitoreo.
 
 Finalmente, el \textbf{Modelo F --- Espacio-Temporal Jer\'arquico} integra
 ambas dimensiones en un marco unificado: ajusta un panel balanceado
@@ -190,8 +205,8 @@ El rango de concentraciones promedio entre estaciones va de
 23.5~$\mu$g/m$^3$ (Santiago Acahualtepec, Iztapalapa),
 una diferencia de 52\% entre la estaci\'on m\'as limpia y la m\'as
 contaminada.
-Todas las estaciones superan la gu\'ia de la OMS de 5~$\mu$g/m$^3$
-para el promedio anual.
+Todas las estaciones superan la gu\'ia de la Organizaci\'on Mundial
+de la Salud (OMS, 2021) de 5~$\mu$g/m$^3$ para el promedio anual.
 
 \subsection*{An\'alisis exploratorio}
 
@@ -278,7 +293,7 @@ y funci\'on de autocorrelaci\'on~(ACF, debe caer r\'apidamente a cero).
 
 \paragraph{Criterio de informaci\'on de la desvianza (DIC).}
 Para comparar modelos dentro de una misma familia distribucional se usa el
-DIC, definido como
+DIC (Lunn et al., 2013), definido como
 \[
   \text{DIC} = \bar{D} + p_D = 2\bar{D} - D(\bar{\theta}),
 \]
@@ -806,7 +821,7 @@ Los datos de PM2.5 son observaciones \emph{referenciadas puntualmente}:
 cada medici\'on $Y(s_j)$ corresponde a una localizaci\'on espec\'ifica
 $s_j = (\text{lon}_j, \text{lat}_j)$.
 Cuando las observaciones presentan dependencia espacial, el marco adecuado
-es el \emph{proceso gaussiano} (PG): una colecci\'on de variables aleatorias
+es el \emph{proceso gaussiano} (PG; Gelfand \& Schliep, 2016): una colecci\'on de variables aleatorias
 tal que cualquier subconjunto finito tiene distribuci\'on normal multivariada.
 Un PG se caracteriza por su funci\'on de media $\mu(s)$ y su funci\'on de
 covarianza $\Sigma(s, t)$ (Nieto Barajas, 2026):
@@ -1082,43 +1097,9 @@ pol\'igonos de 0.41~$\mu$g/m$^3$.
 Aunque el rango absoluto es moderado (3.2~$\mu$g/m$^3$), las implicaciones
 para salud son relevantes: la evidencia epidemiol\'ogica sugiere que
 aumentos de 10~$\mu$g/m$^3$ en PM2.5 se asocian con incrementos del
-7--10\% en mortalidad cardiovascular.
+7--10\% en mortalidad cardiovascular (OMS, 2021).
 Un habitante de Tl\'ahuac est\'a expuesto, en promedio, a 19\% m\'as
 PM2.5 que uno de Zumpango.
-
-
-\subsection{Predicci\'on temporal --- Cuarto trimestre de 2023}
-
-El Modelo~C1 se us\'o tambi\'en para generar predicciones del promedio
-mensual de PM2.5 sobre las 14~estaciones durante el cuarto trimestre de
-2023, evaluando el predictor en las covariables medias de cada mes.
-La distribuci\'on predictiva posterior muestra un patr\'on claramente
-ascendente (Tabla~\ref{tab:q4}), consistente con el m\'aximo invernal
-capturado por los t\'erminos de Fourier.
-
-\begin{table}[H]
-\centering
-\caption{Predicci\'on de PM2.5 promedio mensual (14~estaciones)
-         para el cuarto trimestre de 2023.
-         IC: intervalo de credibilidad al 95\,\%.}
-\label{tab:q4}
-\begin{tabular}{lrrr}
-\toprule
-Mes & Media ($\mu$g/m$^3$) & IC 2.5\,\% & IC 97.5\,\% \\
-\midrule
-Octubre  & 13.41 & 12.42 & 14.45 \\
-Noviembre & 16.11 & 14.82 & 17.46 \\
-Diciembre & 17.29 & 16.08 & 18.57 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Diciembre de 2023 (17.3~$\mu$g/m$^3$) supera la gu\'ia anual de la OMS
-(15~$\mu$g/m$^3$), reflejando el deterioro de la calidad del aire en
-temporada de bajas temperaturas y alta inversi\'on t\'ermica.
-Los intervalos de credibilidad se ampl\'ian de octubre a diciembre
-(de 2.0 a 2.5~$\mu$g/m$^3$), lo que refleja la mayor variabilidad
-interdiaria propia del invierno.
 
 
 \paragraph{¿Qu\'e factores explican la variaci\'on temporal de PM2.5?}
@@ -1259,80 +1240,146 @@ precisiones heredadas $\hat\tau_{t,j}$.
 %==============================================================
 
 \begin{enumerate}
-  \item SINAICA --- Sistema Nacional de Informaci\'on de la Calidad del Aire,
-        Instituto Nacional de Ecolog\'ia y Cambio Clim\'atico.
-        \texttt{https://sinaica.inecc.gob.mx/data.php?tipo=V}.
-        Consultado en 2025.
-  \item Nieto Barajas, L.~E. (2026). \textit{Notas de Regresi\'on Avanzada},
-        Temas 2--7.
-        Departamento de Estad\'istica, ITAM.
-  \item de Finetti, B. (1937). La pr\'evision: ses lois logiques, ses sources
-        subjectives. \textit{Annales de l'Institut Henri Poincar\'e}, 7, 1--68.
-  \item Gelfand, A.~E., \& Schliep, E.~M. (2016). Spatial statistics and
-        Gaussian processes: A beautiful marriage. \textit{Statistical Science},
-        31(1), 109--130.
+  \item de Finetti, B. (1937).
+        La pr\'evision: ses lois logiques, ses sources subjectives.
+        \textit{Annales de l'Institut Henri Poincar\'e}, \textit{7}, 1--68.
+
+  \item Gelfand, A.~E., \& Schliep, E.~M. (2016).
+        Spatial statistics and Gaussian processes: A beautiful marriage.
+        \textit{Statistical Science}, \textit{31}(1), 109--130.
+
+  \item Global Administrative Areas. (s.f.).
+        \textit{GADM database of global administrative areas} (Nivel 2).
+        \texttt{https://gadm.org}
+
+  \item Instituto Nacional de Ecolog\'ia y Cambio Clim\'atico. (s.f.).
+        \textit{Sistema Nacional de Informaci\'on de la Calidad del Aire (SINAICA)}.
+        \texttt{https://sinaica.inecc.gob.mx/data.php?tipo=V}
+
   \item Lunn, D., Jackson, C., Best, N., Thomas, A., \& Spiegelhalter, D. (2013).
-        \textit{The BUGS Book}. CRC Press.
-  \item GADM Database of Global Administrative Areas, Level 2 (Municipios/Alcald\'ias).
-        \texttt{https://gadm.org}.
-  \item OMS (2021). \textit{Global Air Quality Guidelines}. World Health Organization.
-  \item R Core Team (2025). \textit{R: A Language and Environment for Statistical Computing}.
-        R Foundation for Statistical Computing, Vienna, Austria.
-  \item Plummer, M. (2003). JAGS: A program for analysis of Bayesian graphical models
-        using Gibbs sampling. \textit{Proceedings of the 3rd International Workshop on
-        Distributed Statistical Computing}. Vienna, Austria.
+        \textit{The BUGS Book: A Practical Introduction to Bayesian Analysis}.
+        CRC Press.
+
+  \item Nieto Barajas, L.~E. (2026).
+        \textit{Notas de Regresi\'on Avanzada} (Temas 2--7).
+        Departamento de Estad\'istica, ITAM.
+
+  \item Organizaci\'on Mundial de la Salud. (2021).
+        \textit{Global air quality guidelines}.
+        OMS.
+
+  \item Plummer, M. (2003).
+        JAGS: A program for analysis of Bayesian graphical models using Gibbs
+        sampling.
+        En \textit{Proceedings of the 3rd International Workshop on Distributed
+        Statistical Computing} (pp. 1--10). Vienna, Austria.
+
+  \item R Core Team. (2025).
+        \textit{R: A language and environment for statistical computing}.
+        R Foundation for Statistical Computing.
+        \texttt{https://www.R-project.org/}
 \end{enumerate}
 
 
 %==============================================================
 \appendix
-\section{C\'odigo R}
+\section{C\'odigo fuente}
 %==============================================================
 
-El c\'odigo completo est\'a disponible en los siguientes archivos del repositorio:
+El ap\'endice contiene el c\'odigo completo utilizado en el an\'alisis,
+en el orden del flujo de trabajo: descarga y preparaci\'on de datos,
+an\'alisis exploratorio, ajuste de modelos y generaci\'on de figuras.
+Al final se incluyen las especificaciones JAGS de todos los modelos.
 
-\begin{itemize}
-  \item \texttt{scripts/descarga\_masiva\_valle.R} --- descarga de datos SINAICA
-  \item \texttt{scripts/limpieza\_valle\_mexico\_v2.R} --- procesamiento y filtrado
-  \item \texttt{scripts/eda\_valle\_mexico\_v2.R} --- an\'alisis exploratorio
-  \item \texttt{scripts/modelos\_A\_B\_C1\_D\_v2\_profesor.R} --- Modelos A, B, C1, C2, D
-  \item \texttt{scripts/modelo\_E\_valle\_v2\_profesor.R} --- Modelo E (PG espacial)
-  \item \texttt{scripts/jags\_modelo\_A\_valle.txt} --- especificaci\'on JAGS Modelo A
-  \item \texttt{scripts/jags\_modelo\_B\_valle.txt} --- especificaci\'on JAGS Modelo B
-  \item \texttt{scripts/jags\_modelo\_C1\_valle.txt} --- especificaci\'on JAGS Modelo C1
-  \item \texttt{scripts/jags\_modelo\_C2\_gamma\_valle.txt} --- especificaci\'on JAGS Modelo C2
-  \item \texttt{scripts/jags\_modelo\_D\_valle.txt} --- especificaci\'on JAGS Modelo D
-\end{itemize}
-
-A continuaci\'on se incluye la especificaci\'on JAGS del modelo preferido (C1):
-
-\begin{lstlisting}[language=R, caption={Especificaci\'on JAGS del Modelo C1 (Jer\'arquico Normal).}]
-model {
-  for (i in 1:n) {
-    logy[i] ~ dnorm(mu[i], tau)
-    mu[i] <- alpha + alphaj[est[i]]
-             + beta[1]*temp[i] + beta[2]*hr[i]
-             + beta[3]*sen_t[i] + beta[4]*cos_t[i]
-    yf1[i] ~ dnorm(mu[i], tau)
-  }
-  for (j in 1:J) {
-    alphaj[j] ~ dnorm(0, tau.alphaj)
-  }
-  alpha ~ dnorm(0, 0.001)
-  for (k in 1:4) { beta[k] ~ dnorm(0, 0.001) }
-  tau        ~ dgamma(0.001, 0.001)
-  tau.alphaj ~ dgamma(0.001, 0.001)
-  sigma        <- 1 / sqrt(tau)
-  sigma.alphaj <- 1 / sqrt(tau.alphaj)
-}
-\end{lstlisting}
-
-\noindent
-\textbf{Nota sobre notaci\'on:} En JAGS, el segundo argumento de
+\noindent\textbf{Nota sobre notaci\'on JAGS:} El segundo argumento de
 \texttt{dnorm} es la \emph{precisi\'on} $\tau = 1/\sigma^2$
-(no la varianza).
-As\'i, \texttt{dnorm(0, 0.001)} corresponde a $\mathcal{N}(0, 1000)$
-en notaci\'on est\'andar de varianza, es decir, una distribuci\'on
-inicial pr\'acticamente plana sobre los coeficientes.
+(no la varianza), por lo que \texttt{dnorm(0, 0.001)} corresponde a
+$\mathcal{N}(0,\,1000)$---una distribuci\'on inicial pr\'acticamente
+plana sobre los coeficientes.
+
+%--------------------------------------------------------------
+\subsection*{Descarga de datos SINAICA ---
+             \texttt{descarga\_masiva\_valle.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/descarga_masiva_valle.R}
+
+%--------------------------------------------------------------
+\subsection*{Filtrado espacial de estaciones ---
+             \texttt{filtrar\_estaciones\_territorio.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/filtrar_estaciones_territorio.R}
+
+%--------------------------------------------------------------
+\subsection*{Limpieza y preparaci\'on de datos ---
+             \texttt{limpieza\_valle\_mexico\_v2.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/limpieza_valle_mexico_v2.R}
+
+%--------------------------------------------------------------
+\subsection*{An\'alisis exploratorio de datos ---
+             \texttt{eda\_valle\_mexico\_v2.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/eda_valle_mexico_v2.R}
+
+%--------------------------------------------------------------
+\subsection*{Modelos A, B, C1, C2 y D ---
+             \texttt{modelos\_A\_B\_C1\_D\_v2.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/modelos_A_B_C1_D_v2.R}
+
+%--------------------------------------------------------------
+\subsection*{Modelo E --- Proceso Gaussiano y Kriging ---
+             \texttt{modelo\_E\_valle\_v2.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/modelo_E_valle_v2.R}
+
+%--------------------------------------------------------------
+\subsection*{Mapa de predicci\'on espacial ---
+             \texttt{mapa\_valle\_mexico\_v2.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/mapa_valle_mexico_v2.R}
+
+%--------------------------------------------------------------
+\subsection*{Modelo F, Etapa~1 --- Espacio-temporal MCMC ---
+             \texttt{Contaminacion\_Fase1\_SerieTiempo.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/Contaminacion_Fase1_SerieTiempo.R}
+
+%--------------------------------------------------------------
+\subsection*{Modelo F, Etapa~2 --- Agregaci\'on jer\'arquica ---
+             \texttt{Contaminacion\_Fase2\_SerieTiempo.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/Contaminacion_Fase2_SerieTiempo.R}
+
+%--------------------------------------------------------------
+\subsection*{Figuras del Modelo F ---
+             \texttt{figuras\_modelo\_F.R}}
+%--------------------------------------------------------------
+\lstinputlisting[language=R]{scripts/figuras_modelo_F.R}
+
+%--------------------------------------------------------------
+\subsection*{Especificaciones JAGS}
+%--------------------------------------------------------------
+
+\lstinputlisting[caption={Especificaci\'on JAGS --- Modelo A (Normal global).}]%
+  {scripts/jags_modelo_A_valle.txt}
+
+\lstinputlisting[caption={Especificaci\'on JAGS --- Modelo B (Efectos fijos por estaci\'on).}]%
+  {scripts/jags_modelo_B_valle.txt}
+
+\lstinputlisting[caption={Especificaci\'on JAGS --- Modelo C1 (Jer\'arquico Normal, modelo preferido).}]%
+  {scripts/jags_modelo_C1_valle.txt}
+
+\lstinputlisting[caption={Especificaci\'on JAGS --- Modelo C2 (Gamma global).}]%
+  {scripts/jags_modelo_C2_gamma_valle.txt}
+
+\lstinputlisting[caption={Especificaci\'on JAGS --- Modelo D (Tendencia espacial lineal).}]%
+  {scripts/jags_modelo_D_valle.txt}
+
+\lstinputlisting[caption={Especificaci\'on JAGS --- Modelo F, Etapa~1 (Proceso gaussiano espacio-temporal).}]%
+  {scripts/jags_modelo_espacio_temporal.txt}
+
+\lstinputlisting[caption={Especificaci\'on JAGS --- Modelo F, Etapa~2 (Agregaci\'on jer\'arquica ZMVM).}]%
+  {scripts/jags_modelo_jerarquico_fase2.txt}
 
 \end{document}
