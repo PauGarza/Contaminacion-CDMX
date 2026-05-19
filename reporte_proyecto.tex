@@ -47,7 +47,7 @@
 
 \title{Proyecto Final --- Regresi\'on Avanzada\\[6pt]
        \large An\'alisis Bayesiano Espacial de PM2.5 en el Valle de M\'exico}
-\author{Paulina Garza Allende \and Andrea Monserrat Arredondo Rodr\'iguez \and Othoniel Camacho}
+\author{Paulina Garza Allende \and Andrea Monserrat Arredondo Rodr\'iguez \and Othoniel Reyes Camacho}
 \date{19 de mayo de 2026}
 
 \begin{document}
@@ -1171,6 +1171,36 @@ en zonas alejadas de sensores.
            las tres trayectorias convergen a la misma regi\'on.}
 \end{figure}
 
+\paragraph{Par\'ametros estimados --- Etapa~1.}
+El Cuadro~\ref{tab:fase1} resume los estimadores posteriores principales.
+El par\'ametro de rango espacial $\hat\phi = 0.0123$ implica una distancia de
+semivida de correlaci\'on de $-\ln(0.5)/0.0123 \approx 56.4$~km, coincidiendo
+con la extensi\'on longitudinal de la zona metropolitana, lo que valida
+geogr\'aficamente la estructura de covarianza adoptada.
+La varianza espacial ($\sigma_\alpha = 1/\sqrt{1.84} \approx 0.738$ log-unidades)
+supera a la varianza residual ($\sigma_y = 1/\sqrt{6.08} \approx 0.406$
+log-unidades), confirmando que los gradientes geogr\'aficos dominan la
+variaci\'on entre estaciones. Todos los $\hat R < 1.003$.
+
+\begin{table}[H]
+\centering
+\caption{Estimadores posteriores --- Modelo~F Etapa~1 (MET-PGE).}
+\label{tab:fase1}
+\begin{tabular}{llll}
+\hline
+Par\'ametro & Descripci\'on & Media post. & $\hat R$ \\
+\hline
+$\beta_1$ & Arm\'onico seno (estacionalidad) & 0.3359 & 1.0012 \\
+$\beta_2$ & Arm\'onico coseno               & 0.2245 & 1.0010 \\
+$\beta_3$ & Temperatura                     & 0.0368 & 1.0009 \\
+$\beta_4$ & Humedad relativa                & 0.0040 & 1.0015 \\
+$\phi$    & Par\'ametro de rango espacial   & 0.0123 & 1.0011 \\
+$\tau_y$  & Precisi\'on residual            & 6.0769 & 1.0008 \\
+$\tau_\alpha$ & Precisi\'on espacial        & 1.8354 & 1.0022 \\
+\hline
+\end{tabular}
+\end{table}
+
 \paragraph{Imputaci\'on de datos faltantes.}
 La Etapa~1 imputa de forma coherente los valores no observados de cada
 estaci\'on.
@@ -1208,6 +1238,21 @@ ruido local de cada estaci\'on.
            en el cuarto trimestre.}
 \end{figure}
 
+La Figura~\ref{fig:bju} muestra el anclaje de la tendencia te\'orica sobre la
+estaci\'on de mayor cobertura (Benito Ju\'arez, 236~observaciones): la curva
+estimada pasa a trav\'es del centro de gravedad emp\'irico de los datos,
+validando el ajuste del sistema en escala original.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{output/figures/ajuste_F2_benito_juarez.png}
+  \caption{Validaci\'on del Modelo~F Etapa~2 sobre Benito Ju\'arez
+           (estaci\'on de mayor cobertura: 236~observaciones).
+           La l\'inea te\'orica estimada es consistente con la distribuci\'on
+           emp\'irica de los datos observados.}
+  \label{fig:bju}
+\end{figure}
+
 \paragraph{Efectos espaciales de estaci\'on.}
 Los coeficientes $\alpha^\ast_j$ (suma cero) cuantifican la desviaci\'on
 de cada estaci\'on respecto a la tendencia de la cuenca, controlando
@@ -1221,6 +1266,46 @@ por estacionalidad.
            Los valores positivos indican estaciones sistem\'aticamente
            m\'as contaminadas que la media de la cuenca; los negativos,
            m\'as limpias.}
+\end{figure}
+
+El Cuadro~\ref{tab:fase2} presenta los estimadores de la tendencia macro-ambiental.
+El intercepto $\hat\gamma_1 = 2.8197$ corresponde a una concentraci\'on basal de
+$\exp(2.8197) \approx 16.8$~$\mu$g/m$^3$, interpretable como el nivel de fondo
+de PM$_{2.5}$ de la cuenca despu\'es de remover estacionalidad, meteorolog\'ia
+local y efectos espaciales. Los coeficientes arm\'onicos ($\hat\gamma_2 = 0.3315$,
+$\hat\gamma_3 = 0.1221$) implican una amplitud combinada del ciclo anual de
+aproximadamente $\pm$35\,\% respecto a esa l\'inea base.
+
+\begin{table}[H]
+\centering
+\caption{Estimadores posteriores --- Modelo~F Etapa~2 (MJTC-RSC).}
+\label{tab:fase2}
+\begin{tabular}{lllll}
+\hline
+Par\'ametro & Descripci\'on & Media & IC~95\,\% & $\hat R$ \\
+\hline
+$\gamma_1$ & Intercepto basal ZMVM       & 2.8197 & [2.8176,\ 2.8219] & 1.0016 \\
+$\gamma_2$ & Amplitud arm\'onica seno    & 0.3315 & [0.3287,\ 0.3342] & 1.0047 \\
+$\gamma_3$ & Amplitud arm\'onica coseno  & 0.1221 & [0.1195,\ 0.1250] & 1.0006 \\
+\hline
+\end{tabular}
+\end{table}
+
+La Figura~\ref{fig:ajusco} ilustra el mecanismo de desplazamiento geogr\'afico:
+Ajusco Medio ($\hat\alpha^\ast_3 = -0.370$, equivalente a un 31\,\% menos que
+la media de la cuenca) frente a la tendencia basal. En contraste, UAM~Iztapalapa
+presenta el mayor exceso positivo ($\hat\alpha^\ast_{11} = +0.215$, $+24$\,\%
+sobre la media).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{output/figures/desplazamiento_espacial_ajusco.png}
+  \caption{Efecto de desplazamiento geogr\'afico del Modelo~F Etapa~2:
+           perfil estimado de PM$_{2.5}$ para Ajusco Medio
+           ($\hat\alpha^\ast = -0.370$, $-31$\,\%) frente a la tendencia
+           macro-ambiental de la cuenca. La distancia vertical entre ambas
+           curvas cuantifica el efecto espacial de la estaci\'on.}
+  \label{fig:ajusco}
 \end{figure}
 
 \paragraph{Comparaci\'on con los modelos previos.}
